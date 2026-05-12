@@ -1,5 +1,5 @@
 export default async (req) => {
-  const urlString = new URL(req.url).searchParams.get('url');
+  const urlString = new URL(req.url, 'http://localhost').searchParams.get('url');
   if (!urlString) {
     return new Response('Missing ?url=', { status: 400 });
   }

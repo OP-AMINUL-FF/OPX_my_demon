@@ -1,2 +1,3 @@
 [build]
-  functions = "netlify/functions"
+  functions = "FLASHER-WEB/netlify/functions"
+  publish = "FLASHER-WEB"

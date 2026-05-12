@@ -187,9 +187,11 @@ String getDNSLogHTML() {
 
 String getLangTable() {
   String rows;
-  char buf[64];
   for (int i = 0; i < langCount; i++) {
     const char* k = (const char*)pgm_read_ptr(&langTable[i].key);
+    size_t kLen = strlen_P(k);
+    char* buf = (char*)malloc(max(kLen, (size_t)256) + 1);
+    if (!buf) continue;
     strcpy_P(buf, k);
     rows += "<tr><td>" + String(buf) + "</td><td>";
     const char* e = (const char*)pgm_read_ptr(&langTable[i].en);
@@ -198,6 +200,7 @@ String getLangTable() {
     const char* d = (const char*)pgm_read_ptr(&langTable[i].id);
     strcpy_P(buf, d);
     rows += String(buf) + "</td></tr>";
+    free(buf);
   }
   return rows;
 }
@@ -610,10 +613,13 @@ void handleRoot(AsyncWebServerRequest *request) {
     }
     else if (a == "extender_scan") {
       extenderState = EXTENDER_SCANNING;
+      multiTargetCount = 0;
       performScan();
       extenderActive = true;
       extenderState = EXTENDER_IDLE;
-      addLog("Extender scan done - " + String(multiTargetCount) + " networks found");
+      int netCount = 0;
+      for (int i = 0; i < MAX_NETWORKS; i++) { if (networks[i].ssid.length() > 0) netCount++; }
+      addLog("Extender scan done - " + String(netCount) + " networks found");
       dirtyState = true;
     }
     else if (a == "clear_logs") {
@@ -798,7 +804,7 @@ void handleAPI(AsyncWebServerRequest *request) {
     json += "\"apSSID\":\"" + String(AP_SSID) + "\",";
     json += "\"apIP\":\"" + WiFi.softAPIP().toString() + "\",";
     json += "\"wifiConnected\":" + String(wifiClientConnected ? "true" : "false") + ",";
-    json += "\"wifiSSID\":\"" + wifiClientSSID + "\",";
+    json += "\"wifiSSID\":\"" + escapeJSON(wifiClientSSID) + "\",";
     json += "\"internetSharing\":" + String(internetSharingEnabled ? "true" : "false") + ",";
     json += "\"pinProtected\":" + String(webPin.length() > 0 ? "true" : "false") + ",";
     json += "\"pinUnlocked\":" + String(pinUnlocked ? "true" : "false") + ",";
@@ -814,7 +820,7 @@ void handleAPI(AsyncWebServerRequest *request) {
     String json = "[";
     for (int i = 0; i < probeCount; i++) {
       if (i > 0) json += ",";
-      json += "{\"mac\":\"" + bytesToStr(probeLog[i].mac, 6) + "\",\"ssid\":\"" + probeLog[i].ssid + "\"}";
+      json += "{\"mac\":\"" + bytesToStr(probeLog[i].mac, 6) + "\",\"ssid\":\"" + escapeJSON(probeLog[i].ssid) + "\"}";
     }
     json += "]";
     request->send(200, CONTENT_JSON, json);

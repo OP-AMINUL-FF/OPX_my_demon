@@ -417,11 +417,11 @@ static void sendCSA(uint8_t ch, uint8_t* bssid, String ssid, uint8_t newCh) {
   beacon[28] = 0x0B; beacon[29] = 0x16;
   beacon[30] = 0x0C; beacon[31] = 0x12;
   beacon[32] = 0x24; beacon[33] = 0x30;
-  beacon[34] = 0x48; beacon[35] = 0x60;
-  beacon[36] = 0x6C;
-  beacon[37] = 0x00; beacon[38] = ssidLen;
-  for (int i = 0; i < ssidLen; i++) beacon[39 + i] = ssid.charAt(i);
-  int pktLen = 39 + ssidLen;
+  beacon[34] = 0x32; beacon[35] = 0x03;
+  beacon[36] = 0x48; beacon[37] = 0x60; beacon[38] = 0x6C;
+  beacon[39] = 0x00; beacon[40] = ssidLen;
+  for (int i = 0; i < ssidLen; i++) beacon[41 + i] = ssid.charAt(i);
+  int pktLen = 41 + ssidLen;
   // CSA Element (ID 37, len 3: Mode=1, New Channel, Count=0)
   beacon[pktLen] = 37;
   beacon[pktLen + 1] = 3;
@@ -755,11 +755,26 @@ String getLogsHTML() {
   return html;
 }
 
+String escapeJSON(const String& input) {
+  String out;
+  out.reserve(input.length() + 4);
+  for (size_t i = 0; i < input.length(); i++) {
+    char c = input[i];
+    if (c == '"') out += "\\\"";
+    else if (c == '\\') out += "\\\\";
+    else if (c == '\n') out += "\\n";
+    else if (c == '\r') out += "\\r";
+    else if (c == '\t') out += "\\t";
+    else out += c;
+  }
+  return out;
+}
+
 String getLogsJSON() {
   String json = "[";
   for (int i = 0; i < logCount; i++) {
     if (i > 0) json += ",";
-    json += "{\"t\":" + String(logEntries[i].timestamp / 1000) + ",\"l\":" + String(logEntries[i].level) + ",\"m\":\"" + logEntries[i].message + "\"}";
+    json += "{\"t\":" + String(logEntries[i].timestamp / 1000) + ",\"l\":" + String(logEntries[i].level) + ",\"m\":\"" + escapeJSON(logEntries[i].message) + "\"}";
   }
   json += "]";
   return json;
@@ -1040,11 +1055,11 @@ void sendBeacon(uint8_t ch, String ssid, uint8_t* bssid, int burst = BEACON_BURS
   beaconPacket[28] = 0x0B; beaconPacket[29] = 0x16;
   beaconPacket[30] = 0x0C; beaconPacket[31] = 0x12;
   beaconPacket[32] = 0x24; beaconPacket[33] = 0x30;
-  beaconPacket[34] = 0x48; beaconPacket[35] = 0x60;
-  beaconPacket[36] = 0x6C;
-  beaconPacket[37] = 0x00; beaconPacket[38] = ssidLen;
-  for (int i = 0; i < ssidLen; i++) beaconPacket[39 + i] = ssid.charAt(i);
-  int pktLen = 39 + ssidLen;
+  beaconPacket[34] = 0x32; beaconPacket[35] = 0x03;
+  beaconPacket[36] = 0x48; beaconPacket[37] = 0x60; beaconPacket[38] = 0x6C;
+  beaconPacket[39] = 0x00; beaconPacket[40] = ssidLen;
+  for (int i = 0; i < ssidLen; i++) beaconPacket[41 + i] = ssid.charAt(i);
+  int pktLen = 41 + ssidLen;
   wifi_set_channel(ch);
   for (int i = 0; i < burst; i++) {
     wifi_send_pkt_freedom(beaconPacket, pktLen, 0);

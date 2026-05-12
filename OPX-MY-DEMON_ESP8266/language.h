@@ -166,9 +166,13 @@ static String tr(const char* key, uint8_t lang) {
     const char* k = (const char*)pgm_read_ptr(&langTable[i].key);
     if (strcmp_P(key, k) == 0) {
       const char* v = (const char*)pgm_read_ptr(lang == LANG_ENGLISH ? &langTable[i].en : &langTable[i].id);
-      char buf[64];
+      size_t len = strlen_P(v);
+      char* buf = (char*)malloc(len + 1);
+      if (!buf) return String(key);
       strcpy_P(buf, v);
-      return String(buf);
+      String result(buf);
+      free(buf);
+      return result;
     }
   }
   return String(key);

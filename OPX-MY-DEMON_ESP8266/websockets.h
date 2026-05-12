@@ -26,7 +26,7 @@ static void broadcastLog(const String& msg, uint8_t level) {
   if (ws.count() == 0) return;
   String json = "{\"type\":\"log\",\"t\":" + String(millis() / 1000);
   json += ",\"l\":" + String(level);
-  json += ",\"m\":\"" + msg + "\"}";
+  json += ",\"m\":\"" + escapeJSON(msg) + "\"}";
   ws.textAll(json);
 }
 
