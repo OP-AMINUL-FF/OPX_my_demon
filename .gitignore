@@ -1,2 +1,6 @@
 .agents/
 firmware/
+*.ino.bin
+*.ino.elf
+*.ino.map
+.build-memory.log

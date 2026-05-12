@@ -85,11 +85,10 @@ function Run-Cmd([string]$cmd) {
 
 function Run-CmdCapture([string]$cmd) {
     $tmpOut = [System.IO.Path]::GetTempFileName()
-    $tmpErr = [System.IO.Path]::GetTempFileName()
     cmd /c "$cmd >`"$tmpOut`" 2>&1"
     $exitCode = $LASTEXITCODE
     $output = Get-Content $tmpOut -ErrorAction SilentlyContinue
-    Remove-Item $tmpOut, $tmpErr -ErrorAction SilentlyContinue
+    Remove-Item $tmpOut -ErrorAction SilentlyContinue
     return @{ ExitCode = $exitCode; Output = $output }
 }
 
@@ -130,18 +129,18 @@ function Check-Deps {
 # ---- List Ports ----
 function Show-Ports {
     Write-Step "Available COM ports:"
-    $r = Run-Cmd "arduino-cli board list"
-    if ($r.Stderr.Count -eq 0 -or ($r.Stderr -match "No boards")) {
+    $r = Run-CmdCapture "arduino-cli board list"
+    if ($r.Output.Count -eq 0 -or ($r.Output -match "No boards")) {
         Write-Warn "No boards found"
     } else {
-        $r.Stderr | ForEach-Object { Write-Host "  $_" }
+        $r.Output | ForEach-Object { Write-Host "  $_" }
     }
 }
 
 # ---- Detect Port ----
 function Get-Port {
-    $r = Run-Cmd "arduino-cli board list"
-    foreach ($line in $r.Stderr) {
+    $r = Run-CmdCapture "arduino-cli board list"
+    foreach ($line in $r.Output) {
         if ($line -match "^(COM\d+)") { return $matches[1] }
     }
     return $null
@@ -306,9 +305,9 @@ Write-Banner
 if ($ListPorts) { Show-Ports; exit 0 }
 
 Check-Deps
-Invoke-Patch
 if ($Restore) { Invoke-Restore }
 if ($Clean) { Invoke-Clean }
+Invoke-Patch
 
 $output = Invoke-Compile
 if ($Verbose) { $output | ForEach-Object { Write-Host "  $_" } }

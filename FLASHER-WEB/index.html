@@ -503,12 +503,12 @@
             bar.style.width = '0%';
             percent.innerText = '0%';
             
+            const loader = new ESPLoader({
+                port: selectedPort,
+                baudrate: 460800,
+                romBaudrate: 115200,
+            });
             try {
-                const loader = new ESPLoader({
-                    port: selectedPort,
-                    baudrate: 460800,
-                    romBaudrate: 115200,
-                });
                 await loader.connect();
                 
                 await loader.eraseFlash();
@@ -527,7 +527,6 @@
                 }
                 
                 await loader.hardReset();
-                await loader.disconnect();
                 
                 if (type === 'erase') {
                     status.innerText = "Erase Successful!";
@@ -539,6 +538,8 @@
                 }
             } catch (e) {
                 status.innerText = "Error: " + e.message;
+            } finally {
+                try { await loader.disconnect(); } catch(e) {}
             }
         }
 

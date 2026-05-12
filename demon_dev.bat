@@ -510,19 +510,12 @@ if not exist "!FIRMWARE_DIR!\*.bin" (
     set "SELECTED_BIN="
     exit /b 1
 )
-set "LATEST_BIN="
-set "LATEST_TIME=0"
-for %%f in ("!FIRMWARE_DIR!\*.bin") do (
-    if %%~tf gtr !LATEST_TIME! (
-        set "LATEST_BIN=%%~nxf"
-        set "LATEST_TIME=%%~tf"
-    )
+for /f "delims=" %%f in ('dir /b /o-d "!FIRMWARE_DIR!\*.bin" 2^>nul') do (
+    set "SELECTED_BIN=%%f"
+    exit /b 0
 )
-if "!LATEST_BIN!"=="" (
-    for %%f in ("!FIRMWARE_DIR!\*.bin") do set "LATEST_BIN=%%~nxf"
-)
-set "SELECTED_BIN=!LATEST_BIN!"
-exit /b 0
+set "SELECTED_BIN="
+exit /b 1
 
 :: ---- Pick COM Port: user selects from detected ----
 :pick_port
