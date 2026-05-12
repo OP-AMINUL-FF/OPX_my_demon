@@ -631,7 +631,7 @@ static void lruEvictClients() {
 }
 
 // --- Log Levels Optimized ---
-#define LOG_MAX 100
+#define LOG_MAX 20
 #define LOG_BUFFER_MAX 8192
 struct LogEntry {
   unsigned long timestamp;
@@ -654,7 +654,7 @@ static void heapPressureEvict() {
   if (probeCount > 10) { probeCount = max(10, probeCount - 20); addLog("Heap pressure: evicted probes", LOG_WARN); }
   if (clientCount > 10) { clientCount = max(10, clientCount - 10); addLog("Heap pressure: evicted clients", LOG_WARN); }
   if (logCount > 10) { logCount = 10; addLog("Heap pressure: evicted logs", LOG_WARN); }
-  if (dnsLogCount > 10) { dnsLogCount = 10; }
+  if (dnsLogCount > 4) { dnsLogCount = 4; }
 }
 
 // --- PIN Lock State ---

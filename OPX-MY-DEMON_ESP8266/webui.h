@@ -9,9 +9,9 @@
 extern unsigned long startTime;
 
 static String pageHeader() {
-  return "<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no'>"
-    "<title>OPX-MY-DEMON</title>"
-    "<style>"
+  String h = F("<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+    "<meta name='viewport' content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no'>"
+    "<title>OPX-MY-DEMON</title><style>"
     ":root{--accent:#00ff00;--bg:#000;--text:#fff;--dim:#555}"
     "*{margin:0;padding:0;box-sizing:border-box}"
     "body{background:var(--bg);color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:12px;line-height:1.4}"
@@ -22,14 +22,13 @@ static String pageHeader() {
     ".hdr-box::before{top:-2px;left:-2px;border-right:0;border-bottom:0}"
     ".hdr-box::after{bottom:-2px;right:-2px;border-left:0;border-top:0}"
     ".sec{font-size:14px;color:var(--accent);margin:25px 0 10px 0;border-bottom:1px solid #222;padding-bottom:5px;font-weight:bold}"
-    ".sec::before{content:'root@rt18720:~# ';color:var(--dim);font-weight:normal}"
+    ".sec::before{content:'root@rt18720:~#';color:var(--dim);font-weight:normal}"
     ".sec::after{content:'_';animation:blink 1s infinite}"
     "@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}"
     ".grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:15px}"
     ".btn{background:0 0;border:1px solid var(--dim);color:var(--text);padding:10px 5px;text-align:center;text-transform:uppercase;font-size:11px;cursor:pointer;display:block;text-decoration:none;font-weight:700;transition:.2s}"
     ".btn:hover{border-color:var(--accent);color:var(--accent)}"
-    ".btn-red{border-color:#f00;color:#f00}"
-    ".btn-green{border-color:#0f0;color:#0f0}"
+    ".btn-red{border-color:#f00;color:#f00}.btn-green{border-color:#0f0;color:#0f0}"
     "table{width:100%;border-collapse:collapse;margin-top:10px}"
     "th{background:var(--accent);color:#000;text-align:left;padding:8px;font-size:11px;text-transform:uppercase}"
     "td{padding:8px;border-bottom:1px solid #111;font-size:11px}"
@@ -42,14 +41,11 @@ static String pageHeader() {
     ".info-item{padding:8px;border:1px solid #1a1a1a}"
     ".info-item .lbl{font-size:9px;color:var(--dim)}"
     ".info-item .val{font-size:13px;margin-top:2px}"
-    ".green{color:var(--accent)}"
-    ".red{color:#f44336}"
-    ".mb-8{margin-bottom:8px}"
-    ".mt-8{margin-top:8px}"
+    ".green{color:var(--accent)}.red{color:#f44336}"
+    ".mb-8{margin-bottom:8px}.mt-8{margin-top:8px}"
     ".empty{text-align:center;padding:40px 20px;color:var(--dim)}"
     ".footer{text-align:center;padding:20px;color:var(--dim);font-size:10px}"
-    ".flex{display:flex;gap:10px;flex-wrap:wrap}"
-    "</style>"
+    ".flex{display:flex;gap:10px;flex-wrap:wrap}</style>"
     "<script>"
     "function setTheme(n){"
     "const t={'CYBER':'#00ffff','TERMINAL':'#00ff00','RED':'#ff0000','VAPORWAVE':'#ff00ff'};"
@@ -57,8 +53,8 @@ static String pageHeader() {
     "localStorage.setItem('theme',n);"
     "}"
     "window.onload=()=>{setTheme(localStorage.getItem('theme')||'TERMINAL');}"
-    "</script>"
-    "</head><body>";
+    "</script></head><body>");
+  return h;
 }
 
 static String navBar(uint8_t active, uint8_t lang) {

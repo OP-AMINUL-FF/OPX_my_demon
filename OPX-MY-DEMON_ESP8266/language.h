@@ -163,7 +163,7 @@ static const int langCount = sizeof(langTable) / sizeof(langTable[0]);
 
 static String tr(const char* key, uint8_t lang) {
   for (int i = 0; i < langCount; i++) {
-    if (strcmp(langTable[i].key, key) == 0) {
+    if (strcmp(key, langTable[i].key) == 0) {
       return String(lang == LANG_ENGLISH ? langTable[i].en : langTable[i].id);
     }
   }
