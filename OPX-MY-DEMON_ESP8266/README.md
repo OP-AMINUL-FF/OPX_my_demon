@@ -1,4 +1,4 @@
-# NETHERCAP ESP8266 v4.2.0
+# OPX-MY-DEMON ESP8266 v1.0.1
 
 Complete ESP8266 firmware with Evil Twin, Deauther, Beacon, Probe, Session Hijack attacks + Web UI.
 
@@ -12,7 +12,7 @@ Complete ESP8266 firmware with Evil Twin, Deauther, Beacon, Probe, Session Hijac
 - **Language** - English / Indonesian language editor (default: Bahasa Indonesia)
 - **Extender** - WiFi extender mode
 
-## Features (v4.2.0)
+## Features
 - **Session Hijack** - Make ESP8266 pretend as legit clients while real clients get disconnected
 - **Dynamic Pin Assignment** - Map physical button pins in Settings (no hardcoded schematic)
 - **Dynamic OLED Detection** - Auto-detect SSD1306/SH1106 OLED, configurable in Settings
@@ -24,9 +24,9 @@ Complete ESP8266 firmware with Evil Twin, Deauther, Beacon, Probe, Session Hijac
 1. Arduino IDE → Board: NodeMCU 1.0 (ESP-12E Module)
 2. Install ESP8266 board support (2.7+)
 3. Enable `wifi_send_pkt_freedom` (see Spacehuhn docs)
-4. Open `NETHERCAP_ESP8266.ino` → Upload
+4. Open `OPX-MY-DEMON_ESP8266.ino` → Upload
 
 ## Usage
-- AP: `NETHERCAP` / Pass: `deauther`
+- AP: `OPX-MY-DEMON` / Pass: `deauther`
 - Web UI: `http://8.8.8.8`
 - Select target → Start attacks

@@ -1,4 +1,4 @@
-# OPX-MY-DEMON v3.0-POWER
+# OPX-MY-DEMON v1.0.1
 
 A full-featured Wi-Fi penetration testing and social engineering firmware for **ESP8266** (NodeMCU). Built on top of heavily-modified M1z23R's ESP8266-EvilTwin v2 with Spacehuhn's Deauther framework.
 
@@ -90,7 +90,7 @@ Install via Library Manager (Sketch → Include Library → Manage Libraries):
 - **ArduinoJson** (by Benoit Blanchon, v6.x)
 
 #### Step 3: Compile & Upload
-1. Open `NETHERCAP_ESP8266/NETHERCAP_ESP8266.ino` in Arduino IDE
+1. Open `OPX-MY-DEMON_ESP8266/OPX-MY-DEMON_ESP8266.ino` in Arduino IDE
 2. Select Board: **Tools → Board → ESP8266 Boards → NodeMCU 1.0 (ESP-12E Module)**
 3. Flash Size: **Tools → Flash Size → 4MB (FS:2MB OTA:~1MB)**
 4. CPU Frequency: **160 MHz**
@@ -132,29 +132,21 @@ pio run --target uploadfs
 
 ## Flashing Guide (Pre-built Binary)
 
-### Using ESP8266 Flash Download Tool
-1. Download the pre-built binary from the **Releases** page
-2. Open **ESP Flash Download Tool (ESP8266)**
-3. Configure:
-   - SPI Speed: **40MHz**
-   - SPI Mode: **DOUT**
-   - Flash Size: **32Mbit (4MB)**
-4. Address mapping:
-   - `0x00000` — firmware binary
-   - `0x100000` — LittleFS binary
-5. Press **START** and connect GPIO0 to GND, power cycle
+Download `OPX-MY-DEMON_ESP8266.ino.bin` from [Releases](https://github.com/OP-AMINUL-FF/OPX_my_demon/releases).
 
-### Using esptool.py (CLI)
+### Using esptool.py (Recommended)
 ```bash
-# Flash firmware
+# Flash firmware (replace COM3 with your port)
 esptool.py --port COM3 --baud 115200 write_flash \
   --flash_mode dout --flash_size 4MB \
-  0x00000 firmware.bin
-
-# Flash filesystem
-esptool.py --port COM3 --baud 115200 write_flash \
-  0x100000 littlefs.bin
+  0x00000 OPX-MY-DEMON_ESP8266.ino.bin
 ```
+
+### Using ESP8266 Flash Download Tool
+1. Open **ESP Flash Download Tool (ESP8266)**
+2. Configure: SPI Speed **40MHz**, SPI Mode **DOUT**, Flash Size **32Mbit (4MB)**
+3. Address `0x00000` → select the downloaded `.bin` file
+4. Press **START** (connect GPIO0 to GND, power cycle if needed)
 
 ---
 
@@ -205,8 +197,8 @@ esptool.py --port COM3 --baud 115200 write_flash \
 ## File Structure
 
 ```
-NETHERCAP_ESP8266/
-  NETHERCAP_ESP8266.ino   — Main firmware (setup, loop, HTTP handlers)
+OPX-MY-DEMON_ESP8266/
+  OPX-MY-DEMON_ESP8266.ino   — Main firmware (setup, loop, HTTP handlers)
   config.h                — Constants, pin mappings, feature flags
   attacks.h               — Core engine: packet injection, scanning, encryption
   phishing.h              — 9 built-in HTML phishing templates (PROGMEM)
@@ -247,6 +239,12 @@ On boot, the firmware restores the last known state.
 - **M1z23R** — ESP8266-EvilTwin v2 (base framework)
 - **Spacehuhn** — Deauther project (packet injection reference)
 - **OP AMINUL FF** — OPX-MY-DEMON modifications & 2026 upgrades
+
+---
+
+## License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
