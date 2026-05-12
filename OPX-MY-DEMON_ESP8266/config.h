@@ -7,10 +7,10 @@
 #define AP_IP IPAddress(8,8,8,8)
 #define DNS_PORT 53
 
-#define MAX_NETWORKS 32
-#define MAX_STATIONS 32
-#define MAX_NAMES 32
-#define MAX_SSIDS 32
+#define MAX_NETWORKS 24
+#define MAX_STATIONS 24
+#define MAX_NAMES 24
+#define MAX_SSIDS 24
 #define SCAN_INTERVAL 10000
 #define DEAUTH_INTERVAL 80
 #define BEACON_INTERVAL 30
@@ -19,8 +19,8 @@
 #define BEACON_BURST_COUNT 5
 #define PROBE_BURST_COUNT 10
 #define CAPTURED_MAX 10
-#define MAX_CAPTURED_PASS 20
-#define PROBE_MAX 32
+#define MAX_CAPTURED_PASS 16
+#define PROBE_MAX 16
 #define CLIENT_MAX 16
 #define DNS_LOG_MAX 8
 
@@ -68,7 +68,7 @@
 
 // --- DHCP Fingerprinting ---
 #define DHCP_FINGERPRINT_MAX 8
-#define DHCP_OPTION_55_MAX 32
+#define DHCP_OPTION_55_MAX 24
 #define FINGERPRINT_CONFIDENCE_BOOST 15
 
 // --- Dynamic Resource Limits ---

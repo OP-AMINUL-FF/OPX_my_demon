@@ -37,42 +37,34 @@ AsyncWebServer server(80);
 uint8_t currentLang = LANG_ENGLISH;
 unsigned long startTime = 0;
 bool hasCustomHTML = false;
-String customHTML = "";
+// customHTML removed — read from file on demand to save RAM
 int attackTimer = 0;
 unsigned long attackTimerStart = 0;
 
 // --- Wear-Leveling State Tracking ---
 static SaveGrade pendingSave = SAVE_NONE;
 
-static const char* criticalActions[] = {
-  "deauth_start", "deauth_stop", "deauth_all_start", "deauth_all_stop",
-  "precise_deauth_start", "precise_deauth_stop", "true_deauth_start", "true_deauth_stop",
-  "beacon_start", "beacon_stop", "probe_start", "probe_stop",
-  "eviltwin_start", "eviltwin_stop", "hijack_start", "hijack_stop",
-  "rogue_ap_start", "rogue_ap_stop", "stop_all",
-  "save_file", "format", "reboot", "reset", "save_ap",
-  "wifi_connect", "wifi_disconnect", "wifi_sharing_start", "wifi_sharing_stop",
-  "clear_logs", "clear_probes", "clear_clients", "pin_set", "pin_clear",
-  "hide_ap", "auto_select"
-};
+static const char criticalActionTable[] PROGMEM =
+  "deauth_start\0deauth_stop\0deauth_all_start\0deauth_all_stop\0"
+  "precise_deauth_start\0precise_deauth_stop\0true_deauth_start\0true_deauth_stop\0"
+  "beacon_start\0beacon_stop\0probe_start\0probe_stop\0"
+  "eviltwin_start\0eviltwin_stop\0hijack_start\0hijack_stop\0"
+  "rogue_ap_start\0rogue_ap_stop\0stop_all\0"
+  "save_file\0format\0reboot\0reset\0save_ap\0"
+  "wifi_connect\0wifi_disconnect\0wifi_sharing_start\0wifi_sharing_stop\0"
+  "clear_logs\0clear_probes\0clear_clients\0pin_set\0pin_clear\0"
+  "hide_ap\0auto_select";
+#define CRITICAL_COUNT 35
+#define SENSITIVE_COUNT 27
 
-static bool isCriticalAction(const String& a) {
-  for (size_t i = 0; i < sizeof(criticalActions)/sizeof(criticalActions[0]); i++) {
-    if (a == criticalActions[i]) return true;
+static bool stringInTable(const String& a, const char table[], int count) {
+  const char* p = table;
+  for (int i = 0; i < count; i++) {
+    if (strcmp_P(a.c_str(), p) == 0) return true;
+    p += strlen_P(p) + 1;
   }
   return false;
 }
-
-static const char* sensitiveActions[] = {
-  "deauth_start", "deauth_stop", "deauth_all_start", "deauth_all_stop",
-  "precise_deauth_start", "precise_deauth_stop", "true_deauth_start", "true_deauth_stop",
-  "beacon_start", "beacon_stop", "probe_start", "probe_stop",
-  "eviltwin_start", "eviltwin_stop", "hijack_start", "hijack_stop",
-  "rogue_ap_start", "rogue_ap_stop", "stop_all",
-  "save_file", "format", "reboot", "reset", "save_ap",
-  "wifi_connect", "wifi_disconnect", "wifi_sharing_start", "wifi_sharing_stop",
-  "clear_logs", "clear_probes", "clear_clients"
-};
 
 static void markSave(SaveGrade grade) {
   if (grade > pendingSave) pendingSave = grade;
@@ -308,18 +300,14 @@ void loadState() {
 }
 
 // --- Async Route Handlers ---
-static const String CONTENT_HTML = "text/html";
-static const String CONTENT_PLAIN = "text/plain";
-static const String CONTENT_JSON = "application/json";
+#define CONTENT_HTML F("text/html")
+#define CONTENT_PLAIN F("text/plain")
+#define CONTENT_JSON F("application/json")
 
 static bool checkPin(AsyncWebServerRequest *request, const String& action) {
-  if (webPin.length() > 0 && !pinUnlocked) {
-    for (size_t i = 0; i < sizeof(sensitiveActions)/sizeof(sensitiveActions[0]); i++) {
-      if (action == sensitiveActions[i]) {
-        request->send(200, CONTENT_HTML, buildPinPage(currentLang, pinAttempts, pinLockoutUntil > 0));
-        return false;
-      }
-    }
+  if (webPin.length() > 0 && !pinUnlocked && stringInTable(action, criticalActionTable, SENSITIVE_COUNT)) {
+    request->send(200, F("text/html"), buildPinPage(currentLang, pinAttempts, pinLockoutUntil > 0));
+    return false;
   }
   return true;
 }
@@ -514,8 +502,7 @@ void handleRoot(AsyncWebServerRequest *request) {
       currentPhishingPage = PHISHING_CUSTOM;
       String fn = request->arg("file");
       if (!fn.startsWith("/")) fn = "/" + fn;
-      File f = LittleFS.open(fn, "r");
-      if (f) { customHTML = f.readString(); f.close(); customHTML.replace("%SSID%", selectedNetwork.ssid); hasCustomHTML = true; }
+      hasCustomHTML = LittleFS.exists(fn);
       dirtyState = true;
       markSave(SAVE_NONCRITICAL);
     }
@@ -725,11 +712,21 @@ void handleRoot(AsyncWebServerRequest *request) {
 
   if (hotspotActive) {
     String page;
-    String fileNames[] = {"/facebook.html", "/tenda.html", "/generic.html", "/update.html", "/landing.html"};
-    int fileIndices[] = {PHISHING_FACEBOOK, PHISHING_TENDA, PHISHING_GENERIC, PHISHING_UPDATE, PHISHING_LANDING};
+    static const char* const fileNames[] = {"/facebook.html", "/tenda.html", "/generic.html", "/update.html", "/landing.html"};
+    static const int fileIndices[] = {PHISHING_FACEBOOK, PHISHING_TENDA, PHISHING_GENERIC, PHISHING_UPDATE, PHISHING_LANDING};
 
-    if (currentPhishingPage == PHISHING_CUSTOM && hasCustomHTML) { page = customHTML; }
-    else {
+    if (currentPhishingPage == PHISHING_CUSTOM && hasCustomHTML) {
+      Dir d = LittleFS.openDir("/");
+      while (d.next()) {
+        String fn = d.fileName();
+        if (fn.endsWith(".html") && fn != "/index.html") {
+          File f = LittleFS.open(fn, "r");
+          if (f) { page = f.readString(); f.close(); page.replace("%SSID%", selectedNetwork.ssid); }
+          break;
+        }
+      }
+    }
+    if (page.length() == 0) {
       bool loadedFromFile = false;
       for (int fi = 0; fi < 5; fi++) {
         if (currentPhishingPage == (uint8_t)fileIndices[fi] && LittleFS.exists(fileNames[fi])) {
@@ -894,10 +891,7 @@ void setup() {
   savePhishingPages();
   loadBeaconSSIDs();
 
-  if (LittleFS.exists("/custom.html")) {
-    File f = LittleFS.open("/custom.html", "r");
-    if (f) { customHTML = f.readString(); f.close(); hasCustomHTML = true; }
-  }
+  hasCustomHTML = LittleFS.exists("/custom.html") || LittleFS.exists("/custom");
 
   loadState();
   initOTASecret();

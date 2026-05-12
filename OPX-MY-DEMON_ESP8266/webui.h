@@ -58,18 +58,19 @@ static String pageHeader() {
 }
 
 static String navBar(uint8_t active, uint8_t lang) {
-  String titles[] = {"SCAN", "ATTACK", "LOGS", "SETTINGS", "FILE MANAGER", "CUSTOM HTML", "LANGUAGE", "EXTENDER", "HELP"};
-  String title = titles[active];
-  
   if (active == PAGE_SCAN) {
-    return "<div class='hdr-box'><div style='font-size:24px;font-weight:bold;color:var(--accent);text-shadow:0 0 10px var(--accent);letter-spacing:2px'>OPX-MY-DEMON</div><div style='font-size:10px;color:var(--dim);margin-top:6px'>v1.0.1 | developer op aminul ff | demo</div></div>";
-  } else {
-    return "<div class='hdr-box'><h1>" + title + "</h1></div><div class='grid' style='grid-template-columns:100px 100px'><a class='btn' href='/'>BACK</a></div>";
+    return F("<div class='hdr-box'><div style='font-size:24px;font-weight:bold;color:var(--accent);text-shadow:0 0 10px var(--accent);letter-spacing:2px'>OPX-MY-DEMON</div><div style='font-size:10px;color:var(--dim);margin-top:6px'>v1.0.1 | developer op aminul ff | demo</div></div>");
   }
+  static const char titleTable[] PROGMEM = "SCAN\0ATTACK\0LOGS\0SETTINGS\0FILE MANAGER\0CUSTOM HTML\0LANGUAGE\0EXTENDER\0HELP";
+  const char* tp = titleTable;
+  for (int i = 0; i < active; i++) tp += strlen_P(tp) + 1;
+  char buf[16];
+  strcpy_P(buf, tp);
+  return String(F("<div class='hdr-box'><h1>")) + buf + String(F("</h1></div><div class='grid' style='grid-template-columns:100px 100px'><a class='btn' href='/'>BACK</a></div>"));
 }
 
 static String pageFooter() {
-  return "<div class='footer'>OPX-MY-DEMON &bull; developer op aminul ff</div></body></html>";
+  return F("<div class='footer'>OPX-MY-DEMON &bull; developer op aminul ff</div></body></html>");
 }
 
 static String buildScanPage(uint8_t lang, bool deauth, bool beacon, bool probe, bool eviltwin,
