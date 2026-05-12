@@ -1,0 +1,255 @@
+# OPX-MY-DEMON v3.0-POWER
+
+A full-featured Wi-Fi penetration testing and social engineering firmware for **ESP8266** (NodeMCU). Built on top of heavily-modified M1z23R's ESP8266-EvilTwin v2 with Spacehuhn's Deauther framework.
+
+> **Developer:** OP AMINUL FF
+
+---
+
+## Features
+
+### Core Attacks
+| Attack | Description |
+|--------|-------------|
+| **Deauth** | 802.11 deauthentication with PMF bypass (CSA + BSS Transition) |
+| **Evil-Twin** | Rogue AP with captive portal, auto-phishing page selection |
+| **Beacon Spam** | Custom SSID beacon flooding |
+| **Probe Request** | Probe request flooding |
+| **Rogue AP** | Fake free WiFi AP with optional internet sharing |
+| **Session Hijack** | Impersonate legitimate clients |
+| **DDoS Router** | Mass deauth on all connected clients |
+| **Precise Deauth** | Targeted client deauthentication |
+| **True Deauth** | Aggressive deauth mode |
+
+### Security & Hardening (2026 Upgrades)
+- **Constant-Time PIN Verification** — Timing-attack resistant PIN comparison
+- **Reactive Phishing** — Auto-verifies captured passwords via WiFi.begin(), shows success/retry pages
+- **XXTEA Encryption** — All stored passwords and PINs encrypted with device-unique key
+- **Input Sanitization** — XSS-resistant HTML entity encoding
+- **Atomic File Writes** — .tmp + rename pattern prevents filesystem corruption on power loss
+- **Rate-Limited Capture** — Anti-bruteforce credential capture (800ms interval, 50/min max)
+- **PIN Lockout** — Auto-lockout after 5 failed attempts (30s)
+- **Adaptive TX Power** — Signal strength matching for stealth
+- **Heap Monitoring** — Dynamic resource limits prevent crashes
+- **Wear-Leveling State Saves** — Critical saves every 5s, non-critical every 60s
+
+### Phishing Templates (9 Built-in)
+| Template | Type |
+|----------|------|
+| Facebook | Social media login |
+| Google | Google sign-in (email + password) |
+| Instagram | Instagram login (username + password) |
+| Tenda | Router login |
+| Generic ISP | "Connection lost, re-enter WiFi password" |
+| Router Update | Firmware upgrade form with terms |
+| Landing | "500 Internal Server Error" |
+| Custom HTML | Upload your own HTML pages |
+
+### Additional Features
+- **Web UI** — Full terminal-style dark web interface (4 themes: CYBER, TERMINAL, RED, VAPORWAVE)
+- **Internet Sharing (NAT)** — Forward internet from STA to AP interface
+- **Extender Mode** — WiFi repeater functionality
+- **Handshake Capture** — WPA/WPA2 EAPOL handshake logging to PCAP
+- **DHCP Fingerprinting** — Client OS detection via DHCP option 55
+- **DoH Mitigation** — DNS-over-HTTPS canary domain blocking
+- **WebSocket Real-time Status** — Live attack statistics
+- **Secure OTA** — HMAC-SHA256 firmware signature verification
+- **Multi-language** — English & Indonesian (custom language support)
+- **Persistent State** — All settings saved to LittleFS `/state.json`
+
+---
+
+## Hardware Requirements
+
+| Component | Specification |
+|-----------|--------------|
+| **Board** | NodeMCU 1.0 (ESP-12E Module) or any ESP8266 with 4MB flash |
+| **Flash Size** | 4MB (32Mbit) required for LittleFS |
+| **Board Support** | ESP8266 Arduino Core 2.7+ |
+
+---
+
+## Installation Guide
+
+### Method 1: Arduino IDE
+
+#### Step 1: Install ESP8266 Board Support
+1. Open **Arduino IDE** → File → Preferences
+2. Add to **Additional Boards Manager URLs**:
+   ```
+   https://arduino.esp8266.com/stable/package_esp8266com_index.json
+   ```
+3. Tools → Board → Boards Manager → Search "ESP8266" → Install **esp8266 2.7.0+**
+
+#### Step 2: Install Required Libraries
+Install via Library Manager (Sketch → Include Library → Manage Libraries):
+- **ESPAsyncWebServer** (by me-no-dev)
+- **ESPAsyncTCP** (by me-no-dev)
+- **DNSServer** (included with ESP8266 core)
+- **LittleFS** (included with ESP8266 core)
+- **ArduinoJson** (by Benoit Blanchon, v6.x)
+
+#### Step 3: Compile & Upload
+1. Open `NETHERCAP_ESP8266/NETHERCAP_ESP8266.ino` in Arduino IDE
+2. Select Board: **Tools → Board → ESP8266 Boards → NodeMCU 1.0 (ESP-12E Module)**
+3. Flash Size: **Tools → Flash Size → 4MB (FS:2MB OTA:~1MB)**
+4. CPU Frequency: **160 MHz**
+5. Upload Speed: **115200**
+6. Click **→** (Upload) button
+
+#### Step 4: Upload LittleFS Data (for state storage)
+1. Install **ESP8266 LittleFS Data Upload** plugin (or use `arduino-cli`)
+2. Tools → ESP8266 LittleFS Data Upload → Upload
+
+### Method 2: PlatformIO
+
+#### Step 1: Install PlatformIO
+- VS Code Extension: Install **PlatformIO IDE**
+- Or CLI: `pip install platformio`
+
+#### Step 2: Create `platformio.ini`
+```ini
+[env:nodemcuv2]
+platform = espressif8266
+board = nodemcuv2
+framework = arduino
+board_build.flash_mode = dout
+board_build.f_cpu = 160000000L
+board_build.max_size = 4194304
+lib_deps =
+    me-no-dev/ESPAsyncWebServer
+    me-no-dev/ESPAsyncTCP
+    bblanchon/ArduinoJson @ ^6.0.0
+```
+
+#### Step 3: Build & Upload
+```bash
+pio run --target upload
+pio run --target uploadfs
+```
+
+---
+
+## Flashing Guide (Pre-built Binary)
+
+### Using ESP8266 Flash Download Tool
+1. Download the pre-built binary from the **Releases** page
+2. Open **ESP Flash Download Tool (ESP8266)**
+3. Configure:
+   - SPI Speed: **40MHz**
+   - SPI Mode: **DOUT**
+   - Flash Size: **32Mbit (4MB)**
+4. Address mapping:
+   - `0x00000` — firmware binary
+   - `0x100000` — LittleFS binary
+5. Press **START** and connect GPIO0 to GND, power cycle
+
+### Using esptool.py (CLI)
+```bash
+# Flash firmware
+esptool.py --port COM3 --baud 115200 write_flash \
+  --flash_mode dout --flash_size 4MB \
+  0x00000 firmware.bin
+
+# Flash filesystem
+esptool.py --port COM3 --baud 115200 write_flash \
+  0x100000 littlefs.bin
+```
+
+---
+
+## Usage Guide
+
+### Default Access
+| Parameter | Value |
+|-----------|-------|
+| **SSID** | `OPX-MY-DEMON` (configurable) |
+| **Password** | `deauther` (configurable) |
+| **Web UI** | `http://8.8.8.8` |
+| **Serial** | 115200 baud |
+
+### Quick Start
+1. Power on the ESP8266 — it creates a WiFi AP
+2. Connect to the AP using the default credentials
+3. Open browser → navigate to `http://8.8.8.8`
+4. Click **SCAN** to discover nearby networks
+5. Select a target → choose attack type
+
+### Web UI Pages
+| Page | Function |
+|------|----------|
+| **SCAN** | Network scanner, target selection, attack controls |
+| **ATTACK** | Beacon spam config, phishing page selector |
+| **MONITOR** | Packet statistics, system logs |
+| **SETTINGS** | Device info, PIN config, WiFi client, themes |
+| **FILE MANAGER** | LittleFS file browser, upload/download |
+| **CUSTOM HTML** | Upload & select custom phishing pages |
+| **LANGUAGE** | Language editor (EN/ID) |
+| **EXTENDER** | WiFi extender mode |
+| **HELP** | Credits |
+
+### PIN Protection
+1. Go to Settings → **SET PIN** (4-8 digit)
+2. Sensitive actions (deauth, attacks, reboot) require PIN
+3. 5 failed attempts → 30s lockout
+4. PIN stored encrypted in state.json
+
+### Custom Phishing Pages
+1. Upload `.html` files via **FILE MANAGER** or **CUSTOM HTML**
+2. Go to **CUSTOM HTML** → click on uploaded file
+3. Choose **EVIL-TWIN** or **ROGUE AP** to use it
+4. Selection persists across reboots
+
+---
+
+## File Structure
+
+```
+NETHERCAP_ESP8266/
+  NETHERCAP_ESP8266.ino   — Main firmware (setup, loop, HTTP handlers)
+  config.h                — Constants, pin mappings, feature flags
+  attacks.h               — Core engine: packet injection, scanning, encryption
+  phishing.h              — 9 built-in HTML phishing templates (PROGMEM)
+  webui.h                 — Web UI page builders with inline CSS/JS (4 themes)
+  websockets.h            — WebSocket real-time broadcast
+  secure_ota.h            — HMAC-SHA256 firmware verification
+  language.h              — EN/ID translation table (160 entries)
+  forensic_yara.yar       — YARA rules for memory forensics
+```
+
+## Persistence (state.json)
+
+All settings auto-save to `/state.json` on LittleFS:
+- Attack states (deauth, beacon, probe, etc.)
+- WiFi client credentials (encrypted)
+- PIN (encrypted with XXTEA)
+- Selected phishing page
+- Language preference
+- Attack timer configuration
+
+On boot, the firmware restores the last known state.
+
+---
+
+## Technical Notes
+
+- **Packet Injection**: Uses `wifi_send_pkt_freedom()` from ESP8266 SDK
+- **Promiscuous Mode**: Captures EAPOL handshakes and probe requests
+- **Encryption**: XXTEA with device-unique key (MAC + Chip ID + Flash ID)
+- **File System**: LittleFS (4MB flash → ~2MB for filesystem)
+- **Web Server**: Async (non-blocking), handles multiple clients
+- **DNS**: Captive portal via custom DNS server (resolves all to 8.8.8.8)
+
+---
+
+## Credits
+
+- **M1z23R** — ESP8266-EvilTwin v2 (base framework)
+- **Spacehuhn** — Deauther project (packet injection reference)
+- **OP AMINUL FF** — OPX-MY-DEMON modifications & 2026 upgrades
+
+---
+
+## Disclaimer
+
+This firmware is intended for **educational purposes only**. Use only on networks you own or have explicit permission to test. The developers are not responsible for any misuse or illegal activities.

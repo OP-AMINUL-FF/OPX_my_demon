@@ -1,0 +1,115 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define VERSION "OPX-MY-DEMON v3.0-POWER"
+#define AP_SSID "NETHERCAP"
+#define AP_PASS "deauther"
+#define AP_IP IPAddress(8,8,8,8)
+#define DNS_PORT 53
+
+#define MAX_NETWORKS 32
+#define MAX_STATIONS 32
+#define MAX_NAMES 32
+#define MAX_SSIDS 128
+#define SCAN_INTERVAL 10000
+#define DEAUTH_INTERVAL 80
+#define BEACON_INTERVAL 30
+#define PROBE_INTERVAL 20
+#define DEAUTH_BURST_COUNT 80
+#define BEACON_BURST_COUNT 5
+#define PROBE_BURST_COUNT 10
+#define CAPTURED_MAX 50
+#define MAX_CAPTURED_PASS 50
+#define PROBE_MAX 64
+#define CLIENT_MAX 64
+#define DNS_LOG_MAX 64
+
+#define LOG_INFO 0
+#define LOG_WARN 1
+#define LOG_ERR 2
+
+#define PHISHING_FACEBOOK 0
+#define PHISHING_TENDA 1
+#define PHISHING_GENERIC 2
+#define PHISHING_UPDATE 3
+#define PHISHING_LANDING 4
+#define PHISHING_CUSTOM 5
+#define PHISHING_GOOGLE 6
+#define PHISHING_INSTAGRAM 7
+#define PHISHING_COUNT 8
+
+// --- Reactive Phishing Verification States ---
+#define PHISHING_VERIFY_IDLE 0
+#define PHISHING_VERIFYING 1
+#define PHISHING_VERIFY_SUCCESS 2
+#define PHISHING_VERIFY_FAIL 3
+
+#define LANG_ENGLISH 0
+#define LANG_INDONESIAN 1
+#define LANG_CUSTOM 2
+
+#define ATTACK_DEAUTH 0
+#define ATTACK_BEACON 1
+#define ATTACK_PROBE 2
+#define ATTACK_EVILTWIN 3
+#define ATTACK_SESSION_HIJACK 4
+
+#define XOR_KEY_LEN 6
+
+#define PIN_MAX_ATTEMPTS 5
+#define PIN_LOCKOUT_MS 30000
+
+#define CAPTURE_RATE_LIMIT_MS 800
+#define CAPTURE_MAX_PER_MIN 50
+
+#define HEAP_WARNING_THRESHOLD 3000
+#define HEAP_CRITICAL_THRESHOLD 2000
+#define LOG_FILE_MAX_SIZE 131072
+
+// --- DHCP Fingerprinting ---
+#define DHCP_FINGERPRINT_MAX 16
+#define DHCP_OPTION_55_MAX 32
+#define FINGERPRINT_CONFIDENCE_BOOST 15
+
+// --- Dynamic Resource Limits ---
+#define SCAN_HEAP_LOW_LIMIT 15
+#define SCAN_HEAP_MED_LIMIT 24
+#define PROBE_LRU_TRIGGER 5
+#define CLIENT_LRU_TRIGGER 5
+
+#define SSID_MAX_LEN 32
+#define MAC_LEN 6
+#define MIN_PROBE_FRAME_LEN 36
+
+#define ETHER_TYPE_EAPOL 0x888E
+
+#define STATE_CFG_VERSION 4
+#define STATE_CFG_FILE "/state.json"
+
+// --- Wear-Leveling Save Intervals ---
+#define STATE_SAVE_CRITICAL_MS 5000
+#define STATE_SAVE_NONCRITICAL_MS 60000
+#define LOG_FLUSH_INTERVAL_LONG 60000
+
+// --- Adaptive TX Power Constants ---
+#define TX_POWER_MIN 2
+#define TX_POWER_MAX 20
+#define TX_POWER_STEALTH_DELTA 10
+
+#define CHANNEL_MIN 1
+#define CHANNEL_MAX 13
+#define CHANNEL_HOP_INTERVAL 200
+
+enum PAGE {
+  PAGE_SCAN = 0,
+  PAGE_ATTACK,
+  PAGE_MONITOR,
+  PAGE_SETTINGS,
+  PAGE_FILES,
+  PAGE_CUSTOMHTML,
+  PAGE_LANGUAGE,
+  PAGE_EXTENDER,
+  PAGE_HELP
+};
+
+#endif

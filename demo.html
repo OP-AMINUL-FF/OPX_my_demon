@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>OPX-MY-DEMON</title>
+<style>
+:root{--accent:#00ff00;--bg:#000;--text:#fff;--dim:#555}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:12px;line-height:1.4}
+.container{max-width:900px;margin:0 auto;padding:20px 10px}
+.hdr-box{border:1px solid var(--accent);padding:20px;position:relative;text-align:center;margin-bottom:30px}
+.hdr-box h1{font-size:24px;letter-spacing:4px;text-transform:uppercase;color:var(--text);text-shadow:0 0 10px var(--accent)}
+.hdr-box::before,.hdr-box::after{content:'';position:absolute;width:10px;height:10px;border:2px solid var(--accent)}
+.hdr-box::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
+.hdr-box::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
+.sec{font-size:14px;color:var(--accent);margin:25px 0 10px 0;border-bottom:1px solid #222;padding-bottom:5px;font-weight:bold}
+.sec::before{content:'root@rt18720:~# ';color:var(--dim);font-weight:normal}
+.sec::after{content:'_';animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:15px}
+.btn{background:0 0;border:1px solid var(--dim);color:var(--text);padding:10px 5px;text-align:center;text-transform:uppercase;font-size:11px;cursor:pointer;display:block;text-decoration:none;font-weight:700;transition:.2s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-red{border-color:#f00;color:#f00}
+.btn-green{border-color:#0f0;color:#0f0}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th{background:var(--accent);color:#000;text-align:left;padding:8px;font-size:11px;text-transform:uppercase}
+td{padding:8px;border-bottom:1px solid #111;font-size:11px}
+input,select{background:#000;border:1px solid var(--dim);color:var(--text);padding:8px;font-family:inherit;width:100%}
+.log-box{background:#050505;border:1px solid #1a1a1a;padding:10px;height:250px;overflow-y:auto;color:#0f0}
+.badge{border:1px solid var(--accent);padding:2px 6px;font-size:10px;color:var(--accent)}
+.mb-8{margin-bottom:8px}
+.mt-8{margin-top:8px}
+.empty{text-align:center;padding:40px 20px;color:var(--dim)}
+.footer{text-align:center;padding:20px;color:var(--dim);font-size:10px}
+.page{display:none}
+.page.active{display:block}
+</style>
+<script>
+let customFiles = [
+  { id: 'default', name: 'DEFAULT', previewHtml: `<div style="background:#0066cc; color:#fff; padding:10px; font-size:10px; font-family:sans-serif;"><div style="display:flex; justify-content:space-between; font-weight:bold;"><span>ETWIN</span><span>ROGUE</span></div><h3 style="margin-top:10px; font-size:14px; font-weight:normal;">Masukkan ulang password</h3></div><div style="padding:10px; color:#000; font-family:sans-serif; font-size:8px;"><p>Masukkan password Wi-Fi untuk melanjutkan.</p><div style="margin-top:10px;">Password:</div><input type="text" style="width:100%; border:1px solid #ccc; margin-top:2px; padding:4px; background:#fff;"><button style="width:100%; border:1px solid #ccc; margin-top:5px; padding:4px; background:#eee; color:#000;">Lanjutkan</button><p style="margin-top:30px; text-align:center; color:#888;">© All rights reserved 2024.</p></div>` },
+  { id: 'rogue1', name: 'ROGUE1', previewHtml: `<div style="height:100%; display:flex; flex-direction:column; align-items:center; padding:30px 10px; color:#000; font-family:sans-serif; font-size:9px;"><div style="width:60px; height:60px; border-radius:50%; background:#000; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; margin-bottom:15px; border:3px solid #000;">Wi-Fi<br>FREE</div><p style="text-align:center; margin-bottom:15px;">Tekan tombol untuk menggunakan Wi-Fi</p><button style="background:#0066cc; color:#fff; border:none; padding:6px 20px; border-radius:3px;">Mulai</button></div>` }
+];
+let selectedHtmlFile = null;
+
+function setTheme(n){
+  const t={'CYBER':'#00ffff','TERMINAL':'#00ff00','RED':'#ff0000','VAPORWAVE':'#ff00ff'};
+  document.documentElement.style.setProperty('--accent',t[n]||'#00ff00');
+  localStorage.setItem('theme',n);
+}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id === 'page-customhtml') {
+    selectedHtmlFile = null;
+    renderHtmlMenu();
+  }
+}
+function toggleBtn(btn) {
+  if(btn.classList.contains('btn-red')){
+    btn.classList.remove('btn-red');
+    btn.innerText = btn.innerText.replace("STOP", "START");
+  }else{
+    btn.classList.add('btn-red');
+    btn.innerText = btn.innerText.replace("START", "STOP");
+  }
+}
+function renderHtmlMenu() {
+  const container = document.getElementById('html-menu-container');
+  const backBtn = document.getElementById('html-menu-back');
+  
+  if (!selectedHtmlFile) {
+    backBtn.onclick = () => showPage('page-scan');
+    let html = '';
+    if (customFiles.length === 0) {
+      html = `<div class="empty" style="grid-column: 1 / -1;">NO HTML FILES UPLOADED</div>`;
+    } else {
+      customFiles.forEach(file => {
+        html += `
+        <div style="border:1px solid var(--dim); display:flex; flex-direction:column; background:#111; cursor:pointer;" onclick="selectHtml('${file.id}')">
+          <div style="height:250px; background:#fff; position:relative; overflow:hidden;">
+            ${file.previewHtml}
+          </div>
+          <button class="btn" style="border:none; border-top:1px solid var(--dim); width:100%; pointer-events:none;">${file.name}</button>
+        </div>`;
+      });
+    }
+    container.innerHTML = html;
+  } else {
+    backBtn.onclick = () => { selectedHtmlFile = null; renderHtmlMenu(); };
+    let file = customFiles.find(f => f.id === selectedHtmlFile);
+    container.innerHTML = `
+      <div style="border:1px solid var(--dim); display:flex; flex-direction:column; background:#111; max-width:200px;">
+        <div style="height:250px; background:#fff; position:relative; overflow:hidden;">
+          ${file.previewHtml}
+        </div>
+        <button class="btn" style="border:none; border-top:1px solid var(--dim); width:100%; pointer-events:none;">${file.name}</button>
+      </div>
+
+      <div style="border:1px solid var(--dim); padding:15px; background:#050505; height:100%; min-width:200px;">
+        <div style="color:var(--text); margin-bottom:20px; text-align:center; font-size:10px; font-weight:bold;">USE HTML AS :</div>
+        <div class="grid" style="grid-template-columns:1fr; gap:10px;">
+          <button class="btn" style="border-color:var(--accent); color:var(--accent);">EVIL-TWIN</button>
+          <button class="btn" style="border-color:var(--accent); color:var(--accent); box-shadow:0 0 8px var(--accent); background:rgba(0,255,255,0.1);">ROGUE AP</button>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr; margin-top:20px;">
+          <button class="btn" style="border-color:var(--dim);">EDIT</button>
+        </div>
+      </div>
+    `;
+  }
+}
+// Demo action state
+let demoActionStates = {};
+let demoLogs = ['[ SYSTEM ] Demo started'];
+
+function addDemoLog(msg) {
+  const t = new Date();
+  const ts = t.getHours().toString().padStart(2,'0') + ':' +
+             t.getMinutes().toString().padStart(2,'0') + ':' +
+             t.getSeconds().toString().padStart(2,'0');
+  demoLogs.push('[' + ts + '] ' + msg);
+  demoRefreshLogs();
+}
+
+function demoRefreshLogs() {
+  const container = document.getElementById('demoLogContainer');
+  if (container) {
+    container.innerHTML = demoLogs.map(l => l + '<br>').join('');
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function demoClearLogs() {
+  demoLogs = [];
+  addDemoLog('Logs cleared');
+}
+
+function demoAction(btn, type) {
+  const isActive = demoActionStates[type];
+  const names = {
+    deauth: 'DEAUTH', eviltwin: 'EVIL-TWIN', rogueap: 'ROGUE AP',
+    probe: 'PROBE', hijack: 'HIJACK', count: 'COUNT STATIONS',
+    handshake: 'HANDSHAKE', ddos: 'DDOS', precise: 'PRECISE DEAUTH',
+    true: 'TRUE DEAUTH', beacon: 'BEACON SPAM'
+  };
+  const name = names[type] || type;
+
+  if (isActive) {
+    demoActionStates[type] = false;
+    btn.classList.remove('btn-red');
+    btn.innerText = 'START ' + name;
+    addDemoLog('[ ' + name + ' ] Stopped');
+    return;
+  }
+
+  demoActionStates[type] = true;
+  btn.classList.add('btn-red');
+  btn.innerText = 'STOP ' + name;
+
+  switch (type) {
+    case 'beacon':
+      addDemoLog('[ BEACON ] Beacon spam started with ' + demoSsids.length + ' SSIDs');
+      break;
+    case 'deauth':
+      addDemoLog('[ DEAUTH ] Starting Deauth attack on selected target');
+      addDemoLog('[ DEAUTH ] Sending deauth packets...');
+      break;
+    case 'eviltwin':
+      addDemoLog('[ ETWIN ] Evil-Twin started');
+      setTimeout(() => {
+        addDemoLog('[ ETWIN ] Phishing page active on target SSID');
+      }, 1000);
+      break;
+    case 'rogueap':
+      addDemoLog('[ ROGUE ] Rogue AP started: Free WiFi');
+      if (demoWiFiConnected) {
+        addDemoLog('[ ROGUE ] Internet sharing ENABLED via ' + demoWiFiSSID);
+      }
+      break;
+    case 'probe':
+      addDemoLog('[ PROBE ] Probe request flood started');
+      break;
+    case 'hijack':
+      addDemoLog('[ HIJACK ] Session hijack initiated');
+      addDemoLog('[ HIJACK ] Spoofing legitimate client MAC...');
+      break;
+    case 'count':
+      addDemoLog('[ SCAN ] Scanning for connected stations...');
+      setTimeout(() => {
+        const count = Math.floor(Math.random() * 8) + 1;
+        addDemoLog('[ SCAN ] Found ' + count + ' stations on target');
+      }, 1500);
+      demoActionStates[type] = false;
+      btn.classList.remove('btn-red');
+      btn.innerText = 'COUNT STATIONS';
+      return;
+    case 'handshake':
+      addDemoLog('[ HANDSHAKE ] Capturing WPA handshake...');
+      setTimeout(() => {
+        addDemoLog('[ HANDSHAKE ] WPA handshake captured for target');
+      }, 2000);
+      demoActionStates[type] = false;
+      btn.classList.remove('btn-red');
+      btn.innerText = 'CAPTURE HANDSHAKE';
+      return;
+    case 'ddos':
+      addDemoLog('[ DDOS ] DDoS attack on router initiated');
+      let ddosCount = 0;
+      const ddosInterval = setInterval(() => {
+        ddosCount += Math.floor(Math.random() * 100) + 50;
+        addDemoLog('[ DDOS ] Packets sent: ' + ddosCount);
+        if (!demoActionStates['ddos']) {
+          clearInterval(ddosInterval);
+        }
+      }, 2000);
+      break;
+    case 'precise':
+      addDemoLog('[ PRECISE ] Precise Deauth targeting AP');
+      addDemoLog('[ PRECISE ] Sending targeted deauth packets');
+      break;
+    case 'true':
+      addDemoLog('[ TRUE ] True Deauth - aggressive mode');
+      addDemoLog('[ TRUE ] Scans + deauths all networks continuously');
+      break;
+  }
+}
+
+function demoScan() {
+  addDemoLog('[ SCAN ] Scanning for WiFi networks...');
+  setTimeout(() => {
+    const count = demoNetworks.length;
+    addDemoLog('[ SCAN ] Found ' + count + ' networks');
+  }, 1500);
+}
+
+function demoDeepScan() {
+  addDemoLog('[ SCAN ] Deep scan initiated on all channels...');
+  setTimeout(() => {
+    addDemoLog('[ SCAN ] Deep scan complete - found hidden networks');
+  }, 3000);
+}
+
+let demoTargetSSID = '[5G] WIFI GG 5G';
+
+function demoSelectTarget(btn, ssid) {
+  document.querySelectorAll('#page-scan table tbody .btn').forEach(b => {
+    b.style.borderColor = '';
+    b.style.color = '';
+    b.textContent = 'SELECT';
+  });
+  btn.style.borderColor = 'var(--accent)';
+  btn.style.color = 'var(--accent)';
+  btn.textContent = 'SELECTED';
+  demoTargetSSID = ssid;
+  addDemoLog('[ TARGET ] Selected: ' + ssid);
+}
+
+function demoClearSelection() {
+  demoTargetSSID = '';
+  document.querySelectorAll('#page-scan table tbody .btn').forEach(b => {
+    b.style.borderColor = '';
+    b.style.color = '';
+    b.textContent = 'SELECT';
+  });
+  addDemoLog('[ TARGET ] Target selection cleared');
+}
+
+function demoHideAP(btn) {
+  if (btn.innerText === 'HIDE AP') {
+    btn.innerText = 'SHOW AP';
+    addDemoLog('[ AP ] NETHERCAP access point hidden');
+  } else {
+    btn.innerText = 'HIDE AP';
+    addDemoLog('[ AP ] NETHERCAP access point visible');
+  }
+}
+
+// Beacon spam SSID list
+let demoSsids = ['FREE WIFI', 'INTERNET', 'STARBUCKS'];
+
+function renderSsids() {
+  const container = document.getElementById('ssidListContainer');
+  if (!container) return;
+  let html = '<div style="color:var(--dim); font-size:10px; margin-bottom:10px">SSID LIST</div>';
+  demoSsids.forEach(s => {
+    html += '<span class="badge" style="display:inline-block; margin:2px">' + s + '</span>';
+  });
+  container.innerHTML = html;
+}
+
+function demoAddSSID() {
+  const name = prompt('Enter SSID name:');
+  if (name && name.trim()) {
+    demoSsids.push(name.trim());
+    renderSsids();
+    addDemoLog('[ BEACON ] Added SSID: ' + name.trim());
+  }
+}
+
+function demoRemoveSSID() {
+  if (demoSsids.length === 0) return;
+  const removed = demoSsids.pop();
+  renderSsids();
+  addDemoLog('[ BEACON ] Removed SSID: ' + removed);
+}
+
+function demoRandomBeacons() {
+  const brands = ['Free WiFi', 'Starbucks', 'McDonalds', 'Telkom', 'Indihome', 'MyRepublic', 'Cafe Net', 'Mall WiFi', 'Airport', 'Hotel', 'Library', 'Campus', 'Rumah', 'Kantor', 'Hotspot'];
+  demoSsids = [];
+  const count = Math.floor(Math.random() * 8) + 5;
+  for (let i = 0; i < count; i++) {
+    demoSsids.push(brands[Math.floor(Math.random() * brands.length)] + '_' + (Math.floor(Math.random() * 900) + 100));
+  }
+  renderSsids();
+  addDemoLog('[ BEACON ] Randomized ' + count + ' SSIDs');
+}
+
+function demoFactoryReset() {
+  if (!confirm('Reset all settings?')) return;
+  addDemoLog('[ SYSTEM ] Factory reset initiated...');
+  setTimeout(() => {
+    demoSsids = ['FREE WIFI', 'INTERNET', 'STARBUCKS'];
+    demoActionStates = {};
+    demoWiFiConnected = false;
+    demoWiFiSSID = '';
+    demoSharingEnabled = false;
+    demoLogs = ['[ SYSTEM ] Demo started', '[ SYSTEM ] Factory reset complete'];
+    demoRefreshLogs();
+    addDemoLog('[ SYSTEM ] All settings reset to default');
+  }, 2000);
+}
+
+function demoRestart() {
+  addDemoLog('[ SYSTEM ] Rebooting device...');
+  setTimeout(() => {
+    demoLogs = ['[ SYSTEM ] Demo started', '[ SYSTEM ] Reboot complete'];
+    demoActionStates = {};
+    demoWiFiConnected = false;
+    demoWiFiSSID = '';
+    demoSharingEnabled = false;
+    window.scrollTo(0, 0);
+    demoRefreshLogs();
+  }, 2000);
+}
+
+function selectHtml(id) {
+  selectedHtmlFile = id;
+  renderHtmlMenu();
+}
+
+// Demo WiFi Client & Internet Sharing
+let demoWiFiConnected = false;
+let demoWiFiSSID = '';
+let demoSharingEnabled = false;
+const demoNetworks = [
+  { ssid: 'Home_WiFi_5G', bssid: 'A8:29:48:6D:4B:80', ch: 36, rssi: 85, vendor: 'TP-LINK' },
+  { ssid: 'Starbucks_Guest', bssid: '00:1A:2B:3C:4D:5E', ch: 6, rssi: 62, vendor: 'Cisco' },
+  { ssid: 'iPhone (Admin)', bssid: 'AA:BB:CC:DD:EE:FF', ch: 11, rssi: 73, vendor: 'Apple' },
+  { ssid: 'Telkom_4G', bssid: '11:22:33:44:55:66', ch: 3, rssi: 45, vendor: 'Huawei' },
+  { ssid: 'Wifi_Tetangga', bssid: 'DD:EE:FF:11:22:33', ch: 1, rssi: 55, vendor: 'Realtek' },
+];
+
+function demoWifiScan() {
+  const sel = document.getElementById('wifiNetworkSelect');
+  sel.innerHTML = '<option value="">-- Select a network --</option>';
+  demoNetworks.forEach(n => {
+    sel.innerHTML += `<option value="${n.ssid}">${n.ssid} (${n.vendor}, CH ${n.ch}, ${n.rssi}%)</option>`;
+  });
+  document.querySelector('#page-settings .sec:nth-of-type(4)').scrollIntoView({behavior:'smooth'});
+}
+
+function demoWifiConnect() {
+  const sel = document.getElementById('wifiNetworkSelect');
+  const pass = document.getElementById('wifiPassword');
+  const statusEl = document.getElementById('wifiClientStatus');
+  const sharingSection = document.getElementById('internetSharingSection');
+  const btn = document.getElementById('wifiConnectBtn');
+
+  if (demoWiFiConnected) {
+    demoWiFiConnected = false;
+    demoWiFiSSID = '';
+    demoSharingEnabled = false;
+    statusEl.innerHTML = 'Status: <span style="color:var(--dim)">Not Connected</span>';
+    btn.textContent = 'CONNECT';
+    sharingSection.style.display = 'none';
+    sel.disabled = false;
+    pass.disabled = false;
+    return;
+  }
+
+  if (!sel.value) { alert('Please scan and select a WiFi network first.'); return; }
+  if (!pass.value) { alert('Please enter the WiFi password.'); return; }
+
+  demoWiFiConnected = true;
+  demoWiFiSSID = sel.value;
+  statusEl.innerHTML = `Status: <span style="color:var(--accent)">Connected to ${sel.value}</span>`;
+  btn.textContent = 'DISCONNECT';
+  sel.disabled = true;
+  pass.disabled = true;
+  sharingSection.style.display = 'block';
+}
+
+function demoToggleSharing() {
+  const btn = document.getElementById('sharingBtn');
+  demoSharingEnabled = !demoSharingEnabled;
+  btn.textContent = demoSharingEnabled ? 'DISABLE SHARING' : 'ENABLE SHARING';
+  btn.style.borderColor = demoSharingEnabled ? 'var(--accent)' : 'var(--accent)';
+  const statusEl = document.getElementById('wifiClientStatus');
+  if (demoSharingEnabled) {
+    statusEl.innerHTML = `Status: <span style="color:var(--accent)">Connected to ${demoWiFiSSID} + SHARING ACTIVE</span>`;
+  } else {
+    statusEl.innerHTML = `Status: <span style="color:var(--accent)">Connected to ${demoWiFiSSID}</span>`;
+  }
+}
+
+window.onload=()=>{setTheme(localStorage.getItem('theme')||'TERMINAL');}
+</script>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- PAGE: DASHBOARD -->
+  <div id="page-scan" class="page active">
+    <div class="hdr-box">
+      <div style="font-size:24px;font-weight:bold;color:var(--accent);text-shadow:0 0 10px var(--accent);letter-spacing:2px">OPX-MY-DEMON</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:6px">developer op aminul ff | demo</div>
+    </div>
+
+    <div class="sec">MENU</div>
+    <div class="grid">
+      <button class="btn" onclick="showPage('page-customhtml')">HTML MENU</button>
+      <button class="btn" onclick="showPage('page-settings')">SETTINGS</button>
+      <button class="btn" onclick="showPage('page-monitor')">MONITOR</button>
+      <button class="btn" onclick="showPage('page-files')">FILE MANAGER</button>
+      <button class="btn" onclick="demoHideAP(this)">HIDE AP</button>
+      <button class="btn" onclick="showPage('page-help')">CREDITS</button>
+      <button class="btn" onclick="showPage('page-attack')">BEACON SPAM</button>
+      <button class="btn" onclick="showPage('page-monitor')">LOGS</button>
+      <button class="btn" onclick="demoRestart()">RESTART</button>
+    </div>
+
+    <div class="sec">ACTIONS</div>
+    <div class="grid">
+      <button class="btn" onclick="demoAction(this,'deauth')">START DEAUTH</button>
+      <button class="btn" onclick="demoAction(this,'eviltwin')">START EVIL-TWIN</button>
+      <button class="btn" onclick="demoAction(this,'rogueap')">START ROGUE AP</button>
+      <button class="btn" onclick="demoAction(this,'count')">COUNT STATIONS</button>
+      <button class="btn" onclick="demoAction(this,'handshake')">CAPTURE HANDSHAKE</button>
+      <button class="btn" onclick="demoAction(this,'ddos')">DDOS ROUTER</button>
+      <button class="btn" onclick="demoAction(this,'probe')">START PROBE</button>
+      <button class="btn" onclick="demoAction(this,'hijack')">HIJACK SESSION</button>
+      <button class="btn" onclick="demoAction(this,'precise')">PRECISE DEAUTH</button>
+      <button class="btn" onclick="demoAction(this,'true')">TRUE DEAUTH</button>
+    </div>
+
+    <div class="sec">TARGETS</div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr)">
+      <button class="btn" onclick="demoScan()">SCAN</button>
+      <button class="btn" onclick="demoDeepScan()">DEEP SCAN</button>
+      <button class="btn" onclick="demoClearSelection()">CLEAR SELECTION</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>SSID</th>
+          <th>BSSID</th>
+          <th>CH</th>
+          <th>RSSI</th>
+          <th>VENDOR</th>
+          <th>SELECT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--accent)">[5G] WIFI GG 5G</td>
+          <td>A8:29:48:6D:4B:80</td>
+          <td>36</td>
+          <td>100 %</td>
+          <td>TP-LINK</td>
+          <td><button class="btn" style="border-color:var(--accent);color:var(--accent)" onclick="demoSelectTarget(this,'[5G] WIFI GG 5G')">SELECTED</button></td>
+        </tr>
+        <tr>
+          <td>WIFI GG</td>
+          <td>A8:29:48:6D:4B:7E</td>
+          <td>6</td>
+          <td>100 %</td>
+          <td>TP-LINK</td>
+          <td><button class="btn" onclick="demoSelectTarget(this,'WIFI GG')">SELECT</button></td>
+        </tr>
+        <tr>
+          <td>[HIDDEN SSID]</td>
+          <td>9C:6F:52:6B:BB:A0</td>
+          <td>6</td>
+          <td>64 %</td>
+          <td>UNKNOWN</td>
+          <td><button class="btn" onclick="demoSelectTarget(this,'[HIDDEN SSID]')">SELECT</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGE: SETTINGS -->
+  <div id="page-settings" class="page">
+    <div class="hdr-box"><h1>SETTINGS</h1></div>
+    <div class="grid" style="grid-template-columns:100px 100px">
+      <button class="btn" onclick="showPage('page-scan')">BACK</button>
+    </div>
+
+    <div class="sec">THEME</div>
+    <div style="margin-bottom:10px;color:var(--dim)">Select your theme</div>
+    <div class="grid">
+      <button class="btn" onclick="setTheme('CYBER')">CYBER</button>
+      <button class="btn" onclick="setTheme('RED')">RED</button>
+      <button class="btn" onclick="setTheme('TERMINAL')">TERMINAL</button>
+      <button class="btn" onclick="setTheme('VAPORWAVE')">VAPORWAVE</button>
+    </div>
+
+    <div class="sec">DISPLAY</div>
+    <div style="margin-bottom:10px;color:var(--dim)">Display sleep timeout</div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">
+      <button class="btn">15 SECONDS</button>
+      <button class="btn">30 SECONDS</button>
+      <button class="btn" style="border-color:var(--accent);color:var(--accent)">60 SECONDS</button>
+      <button class="btn">120 SECONDS</button>
+      <button class="btn">NO SLEEP</button>
+    </div>
+
+    <div class="sec">GENERAL</div>
+    <div style="margin-bottom:10px;color:var(--dim)">Automatically select multiple SSID from the same Router.</div>
+    <div class="grid" style="grid-template-columns:100px 100px">
+      <button class="btn" style="border-color:var(--accent);color:var(--accent)">OFF</button>
+      <button class="btn">ALL</button>
+    </div>
+
+    <div class="sec">ACCESS POINT</div>
+    <div style="margin-bottom:10px">SSID:</div><input type="text" value="NETHERCAP" class="mb-8">
+    <div style="margin-bottom:10px">PASS:</div><input type="text" value="deauther" class="mb-8">
+    
+    <div class="sec" style="margin-top:20px;">INTERNET FORWARDING (NAT)</div>
+    <div style="margin-bottom:10px;color:var(--dim)">Provide internet access to Rogue AP victims by connecting the ESP to a real WiFi network.</div>
+    <div id="wifiClientStatus" class="mb-8" style="color:var(--dim); font-size:11px;">Status: <span style="color:var(--accent)">Not Connected</span></div>
+    <div style="margin-bottom:10px">TARGET WIFI NETWORK:</div>
+    <div class="grid" style="grid-template-columns:1fr auto; gap:10px; margin-bottom:15px;">
+      <select id="wifiNetworkSelect" style="width:100%; padding:10px; background:#111; color:var(--text); border:1px solid #333; font-family:'Courier New', monospace; outline:none; appearance:none;">
+        <option value="">-- Scan to see networks --</option>
+      </select>
+      <button class="btn" style="padding:10px 15px;" onclick="demoWifiScan()">SCAN</button>
+    </div>
+    <div style="margin-bottom:10px">WIFI PASSWORD:</div>
+    <div class="grid" style="grid-template-columns:1fr auto; gap:10px; margin-bottom:15px;">
+      <input id="wifiPassword" type="password" placeholder="Enter target WiFi password">
+      <button id="wifiConnectBtn" class="btn" style="border-color:var(--accent);color:var(--accent);" onclick="demoWifiConnect()">CONNECT</button>
+    </div>
+    <div id="internetSharingSection" style="display:none;" class="mt-12 mb-8">
+      <div style="margin-bottom:10px">INTERNET SHARING:</div>
+      <button id="sharingBtn" class="btn" style="border-color:var(--accent);color:var(--accent); width:100%;" onclick="demoToggleSharing()">ENABLE SHARING</button>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr; margin-top:30px">
+      <button class="btn btn-red" onclick="demoRestart()">RESTART</button>
+      <button class="btn btn-red" onclick="demoFactoryReset()">FACTORY RESET</button>
+    </div>
+  </div>
+
+  <!-- PAGE: FILE MANAGER -->
+  <!-- PAGE: FILE MANAGER -->
+  <div id="page-files" class="page">
+    <div class="hdr-box"><h1>FILE MANAGER</h1></div>
+    <div class="grid" style="grid-template-columns:100px 100px; margin-bottom:20px;">
+      <button class="btn" onclick="showPage('page-scan')">BACK</button>
+      <button class="btn">REFRESH</button>
+    </div>
+
+    <!-- Storage Bar -->
+    <div style="border:1px solid var(--accent); padding:10px 15px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="width:20px; height:20px; background:var(--accent);"></div>
+      <div style="font-size:11px; font-weight:bold; color:var(--text);">Free: 2024.00 KB / Total: 2040.00 KB</div>
+    </div>
+
+    <!-- Upload Box -->
+    <div style="border:1px dashed var(--dim); padding:15px; margin-bottom:20px">
+      <div class="grid" style="grid-template-columns:1fr; gap:10px;">
+        <div style="display:flex; border:1px solid #333; background:transparent;">
+          <div style="position:relative; width:120px; border-right:1px solid #333;">
+            <input type="file" required style="opacity:0; position:absolute; left:0; top:0; width:100%; height:100%; cursor:pointer;" onchange="document.getElementById('demo-file-label').innerText = this.files[0].name;">
+            <button type="button" class="btn" style="border:none; width:100%; font-weight:bold;">CHOOSE FILES</button>
+          </div>
+          <div id="demo-file-label" style="padding:10px; color:var(--dim); font-size:11px; flex-grow:1; display:flex; align-items:center;">No file chosen</div>
+        </div>
+        <button class="btn" style="background:var(--accent); color:#000; border:none; font-weight:bold; text-shadow:none;">UPLOAD SELECTED FILES</button>
+      </div>
+      <div style="font-size:10px; color:var(--text); margin-top:15px;">* Use web browser to upload, do not use Captive Portal.</div>
+    </div>
+
+    <!-- Actions Section -->
+    <div class="sec">ACTIONS</div>
+    <div id="action-placeholder-demo" style="border:1px dashed var(--dim); padding:15px; text-align:center; color:var(--dim); font-size:11px; margin-bottom:20px;">
+      Select files to see actions
+    </div>
+    <div id="file-actions-container-demo"></div>
+
+    <table>
+      <thead>
+        <tr style="border-bottom:2px solid var(--accent);">
+          <th style="color:var(--accent); background:transparent;">NAME</th>
+          <th style="color:var(--accent); background:transparent;">SIZE</th>
+          <th style="color:var(--accent); background:transparent; text-align:center;">SELECTION</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>attack_config.txt</td><td>457 B</td><td style="text-align:center;"><button class="btn" style="display:inline-block; border-color:var(--accent); color:var(--accent);" onclick="selectFileDemo('attack_config.txt')">SELECT</button></td></tr>
+        <tr><td>beacons.txt</td><td>0 B</td><td style="text-align:center;"><button class="btn" style="display:inline-block; border-color:var(--accent); color:var(--accent);" onclick="selectFileDemo('beacons.txt')">SELECT</button></td></tr>
+        <tr><td>config.txt</td><td>262 B</td><td style="text-align:center;"><button class="btn" style="display:inline-block; border-color:var(--accent); color:var(--accent);" onclick="selectFileDemo('config.txt')">SELECT</button></td></tr>
+        <tr><td>log.txt</td><td>378 B</td><td style="text-align:center;"><button class="btn" style="display:inline-block; border-color:var(--accent); color:var(--accent);" onclick="selectFileDemo('log.txt')">SELECT</button></td></tr>
+      </tbody>
+    </table>
+    
+    <script>
+    let selectedFileDemo = null;
+    function selectFileDemo(fn) {
+      selectedFileDemo = fn;
+      document.getElementById('action-placeholder-demo').style.display = 'none';
+      let container = document.getElementById('file-actions-container-demo');
+      container.innerHTML = '<div class="grid" style="grid-template-columns:repeat(1,1fr); gap:5px; margin-bottom:20px;">' +
+        '<button class="btn" style="border-color:var(--accent); color:var(--accent);" onclick="alert(\'Downloading \' + selectedFileDemo)">DOWNLOAD</button>' +
+        '<button class="btn">RENAME</button>' +
+        '<button class="btn btn-red" style="background:#cc0000; color:#fff; border:none;" onclick="alert(\'Deleting \' + selectedFileDemo)">DELETE</button>' +
+      '</div>';
+    }
+    </script>
+  </div>
+
+  <!-- PAGE: CUSTOM HTML -->
+  <div id="page-customhtml" class="page">
+    <div class="hdr-box"><h1>HTML MENU</h1></div>
+    <div class="grid" style="grid-template-columns:100px 100px; margin-bottom:20px;">
+      <button id="html-menu-back" class="btn">BACK</button>
+    </div>
+
+    <!-- The gallery of templates (Dynamic) -->
+    <div id="html-menu-container" class="grid" style="grid-template-columns:repeat(auto-fit, 200px); gap:20px; align-items:start;">
+    </div>
+  </div>
+
+  <!-- PAGE: BEACON SPAM & ATTACK CONFIG -->
+  <div id="page-attack" class="page">
+    <div class="hdr-box"><h1>ATTACK</h1></div>
+    <div class="grid" style="grid-template-columns:100px 100px">
+      <button class="btn" onclick="showPage('page-scan')">BACK</button>
+    </div>
+
+    <div class="sec">BEACON SPAM</div>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr)">
+      <button class="btn" onclick="demoAction(this,'beacon')">START BEACON SPAM</button>
+      <button class="btn" onclick="demoAddSSID()">ADD</button>
+      <button class="btn" onclick="demoRemoveSSID()">REMOVE</button>
+      <button class="btn" onclick="demoRandomBeacons()">RANDOMIZE BEACONS</button>
+    </div>
+
+    <div id="ssidListContainer" style="border:1px solid #222; padding:15px; min-height:100px; margin-bottom:30px">
+      <div style="color:var(--dim); font-size:10px; margin-bottom:10px">SSID LIST</div>
+      <span class="badge" style="display:inline-block; margin:2px">FREE WIFI</span>
+      <span class="badge" style="display:inline-block; margin:2px">INTERNET</span>
+      <span class="badge" style="display:inline-block; margin:2px">STARBUCKS</span>
+    </div>
+
+    <div class="sec">ATTACK CONFIG</div>
+    <p style="margin-bottom:10px">Target: <span style="color:var(--accent)">[5G] WIFI GG 5G</span></p>
+    <div style="margin-bottom:10px">Phishing Page:</div>
+    <select style="margin-bottom:20px">
+      <option value="0">Facebook</option>
+      <option value="1">Tenda</option>
+      <option value="2">Generic ISP</option>
+      <option value="3">Router Update</option>
+      <option value="4">Maintenance</option>
+      <option value="5">Custom</option>
+    </select>
+  </div>
+
+  <!-- PAGE: MONITOR / LOGS -->
+  <div id="page-monitor" class="page">
+    <div class="hdr-box"><h1>LOGS</h1></div>
+    <div class="grid" style="grid-template-columns:100px 100px">
+      <button class="btn" onclick="showPage('page-scan')">BACK</button>
+      <button class="btn">REFRESH</button>
+    </div>
+
+    <div class="sec">System Logs</div>
+    <div class="log-box" id="demoLogContainer">
+      [ SYSTEM ] Demo started<br>
+    </div>
+    <div class="mt-8"><button class="btn btn-red" onclick="demoClearLogs()">CLEAR LOGS</button> <button class="btn" onclick="demoRefreshLogs()">REFRESH</button></div>
+  </div>
+
+  <!-- PAGE: HELP -->
+  <div id="page-help" class="page">
+    <div class="hdr-box"><h1>CREDITS</h1></div>
+    <div class="grid" style="grid-template-columns:100px 100px">
+      <button class="btn" onclick="showPage('page-scan')">BACK</button>
+    </div>
+    <div class="sec">HELP & CREDITS</div>
+    <div style="color:var(--dim)">Educational tool based on ESP8266 Deauther.</div>
+  </div>
+
+  <div class="footer">OPX-MY-DEMON &bull; developer op aminul ff</div>
+
+</div>
+
+</body>
+</html>
