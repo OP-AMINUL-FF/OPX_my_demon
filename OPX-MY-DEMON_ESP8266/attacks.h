@@ -392,7 +392,7 @@ static void sendBSSTransitionRequest(uint8_t ch, uint8_t* targetBSSID, uint8_t* 
   pkt[15] = 0x00;                // Candidate Status: Accept
   pkt[16] = 0x00;                // Preference (0 = no preference)
 
-  uint8_t actionFrame[40] = {0};
+  uint8_t actionFrame[41] = {0};
   actionFrame[0] = 0xD0; actionFrame[1] = 0x00; // Action frame (Category)
   memcpy(&actionFrame[4], targetBSSID, 6);        // DA = target BSSID
   memcpy(&actionFrame[10], clientMAC, 6);          // SA = client MAC

@@ -66,7 +66,7 @@ static String navBar(uint8_t active, uint8_t lang) {
   String title = titles[active];
   
   if (active == PAGE_SCAN) {
-    return "<div class='hdr-box'><div style='font-size:24px;font-weight:bold;color:var(--accent);text-shadow:0 0 10px var(--accent);letter-spacing:2px'>OPX-MY-DEMON</div><div style='font-size:10px;color:var(--dim);margin-top:6px'>v3.0-POWER | developer op aminul ff | demo</div></div>";
+    return "<div class='hdr-box'><div style='font-size:24px;font-weight:bold;color:var(--accent);text-shadow:0 0 10px var(--accent);letter-spacing:2px'>OPX-MY-DEMON</div><div style='font-size:10px;color:var(--dim);margin-top:6px'>v1.0.1 | developer op aminul ff | demo</div></div>";
   } else {
     return "<div class='hdr-box'><h1>" + title + "</h1></div><div class='grid' style='grid-template-columns:100px 100px'><a class='btn' href='/'>BACK</a></div>";
   }

@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define VERSION "OPX-MY-DEMON v3.0-POWER"
+#define VERSION "OPX-MY-DEMON v1.0.1"
 #define AP_SSID "NETHERCAP"
 #define AP_PASS "deauther"
 #define AP_IP IPAddress(8,8,8,8)
