@@ -42,9 +42,7 @@ int attackTimer = 0;
 unsigned long attackTimerStart = 0;
 
 // --- Wear-Leveling State Tracking ---
-enum SaveGrade { SAVE_NONE, SAVE_NONCRITICAL, SAVE_CRITICAL };
 static SaveGrade pendingSave = SAVE_NONE;
-static unsigned long lastStateSave = 0;
 
 static const char* criticalActions[] = {
   "deauth_start", "deauth_stop", "deauth_all_start", "deauth_all_stop",
@@ -82,10 +80,7 @@ static void markSave(SaveGrade grade) {
 
 void internetSharing(bool enable) {
   if (enable && wifiClientConnected && WiFi.status() == WL_CONNECTED) {
-    struct netif *sta_if = wifi_station_get_netif();
-    struct netif *ap_if = wifi_softap_get_netif();
-    if (sta_if && ap_if) {
-      netif_set_default(sta_if);
+    if (!ip_forward_enabled) {
       ip_forward_enabled = 1;
       IPAddress gw = WiFi.gatewayIP();
       WiFi.softAPConfig(AP_IP, gw, IPAddress(255,255,255,0));
@@ -821,7 +816,7 @@ void handleAPI(AsyncWebServerRequest *request) {
 
 void handleMonitor(AsyncWebServerRequest *request) {
   request->send(200, CONTENT_HTML, buildMonitorPage(currentLang, deauthPkts, beaconPkts, probePkts,
-    totalPkts, getLogsHTML(), getProbeHTML(), getClientHTML(), getDNSLogHTML()));
+    totalPkts, getLogsHTML()));
 }
 
 void handleSettings(AsyncWebServerRequest *request) {
@@ -1116,7 +1111,7 @@ void loop() {
   }
 
   // --- Flush Logs Periodically ---
-  if (now - lastLogFlush >= LOG_FLUSH_INTERVAL && logBuffer.length() > 0) {
+  if (now - lastLogFlush >= LOG_FLUSH_INTERVAL_LONG && logBuffer.length() > 0) {
     flushLogs();
   }
 

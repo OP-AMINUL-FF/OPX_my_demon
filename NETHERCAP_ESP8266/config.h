@@ -10,7 +10,7 @@
 #define MAX_NETWORKS 32
 #define MAX_STATIONS 32
 #define MAX_NAMES 32
-#define MAX_SSIDS 128
+#define MAX_SSIDS 32
 #define SCAN_INTERVAL 10000
 #define DEAUTH_INTERVAL 80
 #define BEACON_INTERVAL 30
@@ -19,10 +19,10 @@
 #define BEACON_BURST_COUNT 5
 #define PROBE_BURST_COUNT 10
 #define CAPTURED_MAX 50
-#define MAX_CAPTURED_PASS 50
-#define PROBE_MAX 64
+#define MAX_CAPTURED_PASS 20
+#define PROBE_MAX 32
 #define CLIENT_MAX 64
-#define DNS_LOG_MAX 64
+#define DNS_LOG_MAX 32
 
 #define LOG_INFO 0
 #define LOG_WARN 1
@@ -85,6 +85,8 @@
 
 #define STATE_CFG_VERSION 4
 #define STATE_CFG_FILE "/state.json"
+
+enum SaveGrade { SAVE_NONE, SAVE_NONCRITICAL, SAVE_CRITICAL };
 
 // --- Wear-Leveling Save Intervals ---
 #define STATE_SAVE_CRITICAL_MS 5000

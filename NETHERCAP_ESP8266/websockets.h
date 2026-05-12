@@ -7,6 +7,8 @@
 #include "config.h"
 #include "attacks.h"
 
+extern unsigned long startTime;
+
 static AsyncWebSocket ws("/ws");
 
 static void broadcastStatus() {

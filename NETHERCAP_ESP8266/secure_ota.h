@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <Hash.h>
+#include <bearssl/bearssl.h>
 #include <LittleFS.h>
 #include "config.h"
 
@@ -26,18 +26,18 @@ static void initOTASecret() {
 }
 
 static void computeSHA256(Stream& data, size_t len, uint8_t* hashOut) {
-  SHA256 sha256;
-  sha256.begin();
+  br_sha256_context ctx;
+  br_sha256_init(&ctx);
   uint8_t buf[64];
   size_t remaining = len;
   while (remaining > 0) {
     size_t toRead = (remaining > 64) ? 64 : remaining;
     size_t read = data.readBytes(buf, toRead);
     if (read == 0) break;
-    sha256.update(buf, read);
+    br_sha256_update(&ctx, buf, read);
     remaining -= read;
   }
-  memcpy(hashOut, sha256.finalize(HASH_SIZE), OTA_HASH_SIZE);
+  br_sha256_out(&ctx, hashOut);
 }
 
 static void computeHMACSHA256(const uint8_t* data, size_t len, const uint8_t* key, size_t keyLen, uint8_t* hmacOut) {
@@ -48,16 +48,16 @@ static void computeHMACSHA256(const uint8_t* data, size_t len, const uint8_t* ke
     inner[i] = (i < keyLen) ? key[i] ^ 0x36 : 0x36;
     outer[i] = (i < keyLen) ? key[i] ^ 0x5C : 0x5C;
   }
-  SHA256 sha;
-  sha.begin();
-  sha.update(inner, 64);
-  sha.update(data, len);
+  br_sha256_context ctx;
   uint8_t innerHash[32];
-  memcpy(innerHash, sha.finalize(HASH_SIZE), 32);
-  sha.begin();
-  sha.update(outer, 64);
-  sha.update(innerHash, 32);
-  memcpy(hmacOut, sha.finalize(HASH_SIZE), OTA_SIGNATURE_SIZE);
+  br_sha256_init(&ctx);
+  br_sha256_update(&ctx, inner, 64);
+  br_sha256_update(&ctx, data, len);
+  br_sha256_out(&ctx, innerHash);
+  br_sha256_init(&ctx);
+  br_sha256_update(&ctx, outer, 64);
+  br_sha256_update(&ctx, innerHash, 32);
+  br_sha256_out(&ctx, hmacOut);
 }
 
 static bool verifyOTASignature(const uint8_t* firmwareHash, const uint8_t* signature) {

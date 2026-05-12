@@ -11,6 +11,11 @@ extern "C" {
   #include "user_interface.h"
 }
 
+void addLog(String msg, uint8_t level = LOG_INFO);
+bool flushLogs();
+String bytesToStr(const uint8_t* b, uint32_t size);
+void sendDeauth(uint8_t ch, uint8_t* bssid, int burstCount);
+
 struct Network {
   String ssid;
   uint8_t ch;
@@ -99,7 +104,7 @@ DNSEntry dnsLog[DNS_LOG_MAX];
 int dnsLogCount = 0;
 
   // --- EAPOL / WPA Handshake Detection ---
-#define EAPOL_MAX 16
+#define EAPOL_MAX 4
 #define PCAP_GLOBAL_HEADER_LEN 24
 #define PCAP_PKT_HEADER_LEN 16
 struct EAPOLEntry {
@@ -454,8 +459,6 @@ static bool shouldUseAlternativeAttack(const Network& net) {
 }
 
 // --- DHCP Fingerprinting (802.11 MAC Randomization Bypass) ---
-#define DHCP_FINGERPRINT_MAX 16
-#define DHCP_OPTION_55_MAX 16
 
 struct DeviceFingerprint {
   uint8_t clientMAC[6];
@@ -627,6 +630,21 @@ static void lruEvictClients() {
   clientCount--;
 }
 
+// --- Log Levels Optimized ---
+#define LOG_MAX 100
+#define LOG_BUFFER_MAX 8192
+struct LogEntry {
+  unsigned long timestamp;
+  uint8_t level;
+  String message;
+};
+LogEntry logEntries[LOG_MAX];
+int logCount = 0;
+int logHead = 0;
+unsigned long lastLogFlush = 0;
+String logBuffer = "";
+unsigned int logBufferSize = 0;
+
 static bool heapLowPressure() {
   return ESP.getFreeHeap() < HEAP_WARNING_THRESHOLD + 2000;
 }
@@ -670,22 +688,7 @@ String htmlEntities(String input) {
   return input;
 }
 
-// --- Log Levels Optimized ---
-#define LOG_MAX 100
-#define LOG_BUFFER_MAX 8192
-struct LogEntry {
-  unsigned long timestamp;
-  uint8_t level;
-  String message;
-};
-LogEntry logEntries[LOG_MAX];
-int logCount = 0;
-int logHead = 0;
-unsigned long lastLogFlush = 0;
-String logBuffer = "";
-unsigned int logBufferSize = 0;
-
-void addLog(String msg, uint8_t level = LOG_INFO) {
+void addLog(String msg, uint8_t level) {
   int idx;
   if (logCount < LOG_MAX) {
     idx = logCount;
