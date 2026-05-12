@@ -548,7 +548,7 @@
         // --- Home Page: Hero Version Badge ---
         async function fetchHeroVersion() {
             try {
-                const res = await fetch('https://api.github.com/repos/OP-AMINUL-FF/OPX_my_demon/releases/latest');
+                const res = await fetch('https://api.github.com/repos/OP-AMINUL-FF/OPX_my_demon/releases/latest?t=' + Date.now());
                 const data = await res.json();
                 document.getElementById('hero-version').textContent = (data.tag_name || 'v?.?.?') + ' — LATEST';
             } catch(e) {
@@ -562,7 +562,7 @@
             try {
                 const res = await fetch('https://api.github.com/repos/OP-AMINUL-FF/OPX_my_demon/releases');
                 const releases = await res.json();
-                if (!releases.length) { container.innerHTML = '<div class="glass rounded-3xl p-8 text-gray-500 text-center">No releases yet.</div>'; return; }
+                if (!releases || !releases.length) { container.innerHTML = '<div class="glass rounded-3xl p-8 text-gray-500 text-center">No releases yet.</div>'; return; }
                 container.innerHTML = '';
                 for (const r of releases) {
                     const bin = r.assets.find(a => a.name.endsWith('.bin'));
@@ -654,7 +654,7 @@
         async function fetchReadme() {
             const container = document.getElementById('readme-container');
             try {
-                const res = await fetch('https://raw.githubusercontent.com/OP-AMINUL-FF/OPX_my_demon/master/README.md');
+                const res = await fetch('https://raw.githubusercontent.com/OP-AMINUL-FF/OPX_my_demon/master/README.md?t=' + Date.now());
                 const md = await res.text();
                 const html = marked.parse(md);
                 container.innerHTML = '<div class="readme-content">' + html + '</div>';
