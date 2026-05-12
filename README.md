@@ -92,7 +92,7 @@ Install via Library Manager (Sketch → Include Library → Manage Libraries):
 #### Step 3: Compile & Upload
 1. Open `OPX-MY-DEMON_ESP8266/OPX-MY-DEMON_ESP8266.ino` in Arduino IDE
 2. Select Board: **Tools → Board → ESP8266 Boards → NodeMCU 1.0 (ESP-12E Module)**
-3. Flash Size: **Tools → Flash Size → 4MB (FS:2MB OTA:~1MB)**
+3. Flash Size: **Tools → Flash Size → 4MB (FS:3MB OTA:~0.5MB)** (or `4M3M` for max storage)
 4. CPU Frequency: **160 MHz**
 5. Upload Speed: **115200**
 6. Click **→** (Upload) button
@@ -133,6 +133,8 @@ pio run --target uploadfs
 ## Flashing Guide (Pre-built Binary)
 
 Download `OPX-MY-DEMON_ESP8266.ino.bin` from [Releases](https://github.com/OP-AMINUL-FF/OPX_my_demon/releases).
+
+> **Note:** Firmware built with `4M3M` flash layout — **~3MB free for LittleFS** (maximum storage).
 
 ### Using esptool.py (Recommended)
 ```bash
