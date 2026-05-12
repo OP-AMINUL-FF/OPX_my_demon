@@ -1,32 +1,47 @@
-# OPX-MY-DEMON ESP8266 v1.0.1
+# OPX-MY-DEMON ESP8266 v1.0.2
 
 Complete ESP8266 firmware with Evil Twin, Deauther, Beacon, Probe, Session Hijack attacks + Web UI.
 
-## Pages
-- **Scan** - Network scanner, target selection, attack status
-- **Attack** - Deauth / Beacon / Probe / EvilTwin / Session Hijack controls + phishing page selector
-- **Monitor** - Packet counter
-- **Settings** - Device info, AP settings, dynamic button pin config, reboot/reset/format
-- **Files** - SPIFFS file manager (upload/delete)
-- **Custom HTML** - Upload custom phishing page
-- **Language** - English / Indonesian language editor (default: Bahasa Indonesia)
-- **Extender** - WiFi extender mode
-
-## Features
-- **Session Hijack** - Make ESP8266 pretend as legit clients while real clients get disconnected
-- **Dynamic Pin Assignment** - Map physical button pins in Settings (no hardcoded schematic)
-- **Dynamic OLED Detection** - Auto-detect SSD1306/SH1106 OLED, configurable in Settings
-- **Extender** - WiFi repeater functionality
-- **Virtual Display** - Smoother virtual display rendering
-- **Enhanced Language Support** - Full English & Bahasa Indonesia support
-
 ## Build
-1. Arduino IDE → Board: NodeMCU 1.0 (ESP-12E Module)
-2. Install ESP8266 board support (2.7+)
-3. Enable `wifi_send_pkt_freedom` (see Spacehuhn docs)
-4. Open `OPX-MY-DEMON_ESP8266.ino` → Upload
+
+```powershell
+# Quick compile
+.\build.ps1
+
+# Clean compile (no cache)
+.\build.ps1 -Clean
+```
+
+> `build.ps1` auto-patches ESP8266 core (removes IRAM_ATTR from unused PWM/GDB code) + compiles with `mmu=4816` (48KB IRAM).
+
+## Flash
+
+```powershell
+arduino-cli upload --fqbn "esp8266:esp8266:nodemcuv2" --port COM3 --input-dir ..\firmware
+```
+
+Or esptool:
+```bash
+esptool.py --port COM3 --baud 115200 write_flash --flash_mode dout --flash_size 4MB 0x00000 OPX-MY-DEMON_ESP8266_v1.0.2.bin
+```
+
+## Pages
+- **Scan** — Network scanner, target selection, attack controls
+- **Attack** — Deauth / Beacon / Probe / EvilTwin / Session Hijack + phishing selector
+- **Monitor** — Packet stats, system logs, power config
+- **Settings** — Device info, AP config, PIN, themes, WiFi client, NAT sharing
+- **Files** — LittleFS file manager
+- **Custom HTML** — Upload custom phishing pages
+- **Language** — English / Indonesian editor
+- **Extender** — WiFi extender mode
+
+## Memory Usage (v1.0.2)
+| Section | Used | Total | % |
+|---------|------|-------|---|
+| DRAM | 57304 | 80192 | 71% |
+| IRAM (ICACHE+IRAM) | 43727 | 65536 | 66% |
+| Flash (IROM) | 395956 | 1048576 | 37% |
 
 ## Usage
-- AP: `OPX-MY-DEMON` / Pass: `deauther`
+- AP: `NETHERCAP` / Pass: `deauther`
 - Web UI: `http://8.8.8.8`
-- Select target → Start attacks

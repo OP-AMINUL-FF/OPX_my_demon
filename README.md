@@ -1,8 +1,44 @@
-# OPX-MY-DEMON v1.0.1
+# OPX-MY-DEMON v1.0.2
 
 A full-featured Wi-Fi penetration testing and social engineering firmware for **ESP8266** (NodeMCU). Built on top of heavily-modified M1z23R's ESP8266-EvilTwin v2 with Spacehuhn's Deauther framework.
 
 > **Developer:** OP AMINUL FF
+
+---
+
+## What's New in v1.0.2
+
+### Aggressive RAM Optimization
+- **PROGMEM migration** — All language strings, action tables, HTML templates, and web UI strings moved to flash (PROGMEM/F() macros)
+- **Buffer shrink** — Network/station/probe/log buffers reduced to fit within 80KB DRAM limit
+- **Removed `customHTML` cache** — Custom phishing pages read from LittleFS on demand instead of held in RAM
+- **EAPOL raw data clipped** — From 256 → 64 bytes per handshake entry
+- **Dead code removal** — Unused variables and functions stripped (`computeSHA256`, `verifyOTASignature`, `sanitizeHexString`, `lastChannelHop`, `phishingSessionId`, `wifiClientStatus`, `extenderTargetSSID/pass`)
+
+### IRAM Optimization
+- **MMU=4816** — 16KB ICACHE + 48KB IRAM (vs default 32/32), yields **66% IRAM usage** (was **91%**)
+- **Core patches** — 11 `IRAM_ATTR` removed from `waveform_pwm.cpp`, 1 from `gdb_hooks.cpp` (build.ps1 auto-applies)
+
+### Bug Fixes
+- **Atomic file writes** — `/state.json` writes use `.tmp` + rename pattern to prevent corruption
+- **Upload handler** — Fixed `w` vs `a` mode for file uploads; sanitized path handling
+- **State.json upload** — Uses atomic `.tmp` pattern + explicit rename
+- **Action string table** — Moved from `String*` array (RAM) to `PROGMEM` compact table (flash)
+- **hide_ap** — Properly uses `WiFi.softAP(ssid, pass, ch, hidden)` API
+- **BSS Transition (802.11v)** — Uses broadcast DA instead of per-client, correct action frame body
+- **EAPOL parsing** — Fixed QoS bitmask and +HTC handling
+- **Log buffer** — Reduced from `LOG_BUFFER_MAX=8192` to `2048`
+- **`delay(100)` before `ESP.restart()`** — Ensures HTTP response is sent before reboot
+- **`WiFi.mode(WIFI_AP_STA)`** — Moved before `loadState()` to ensure proper radio init
+
+### v1.0.2 Changelog
+- `config.h`: v1.0.1→v1.0.2, buffer limits reduced, EAPOL_MAX added
+- `OPX-MY-DEMON_ESP8266.ino`: PROGMEM tables, removed `customHTML` RAM cache, atomic saves, `wifiClientStatus` removed, upload path sanitized, `hide_ap` API fix, `delay(100)` before reboot
+- `webui.h`: All HTML template strings via `F()` macro, navBar titles via PROGMEM
+- `attacks.h`: Dead code removed, BSS Transition broadcast fix, EAPOL parsing fix, DHCP fingerprint buffers shrunk, `phishingSessionId` removed
+- `language.h`: `langTable` moved to PROGMEM, `tr()` reads via `pgm_read_ptr`
+- `secure_ota.h`: Unused functions removed
+- New: `build.ps1`, `patches/` (core IRAM_ATTR patches), `AGENTS.md`
 
 ---
 
@@ -101,7 +137,42 @@ Install via Library Manager (Sketch → Include Library → Manage Libraries):
 1. Install **ESP8266 LittleFS Data Upload** plugin (or use `arduino-cli`)
 2. Tools → ESP8266 LittleFS Data Upload → Upload
 
-### Method 2: PlatformIO
+### Method 2: arduino-cli (Recommended)
+
+#### Step 1: Install arduino-cli
+```powershell
+# Windows (winget)
+winget install Arduino.ArduinoCLI
+
+# Or manual: https://arduino.github.io/arduino-cli/installation/
+```
+
+#### Step 2: One-time Setup
+```powershell
+arduino-cli core update-index
+arduino-cli core install esp8266:esp8266
+```
+
+#### Step 3: Install Required Libraries
+```powershell
+arduino-cli lib install "ESP Async WebServer" "ESPAsyncTCP" "ArduinoJson"
+```
+
+#### Step 4: Build & Flash
+```powershell
+# Quick compile (auto-patches core + compiles)
+.\OPX-MY-DEMON_ESP8266\build.ps1
+
+# Clean compile (no cache)
+.\OPX-MY-DEMON_ESP8266\build.ps1 -Clean
+
+# Flash (change COM3 to your port)
+arduino-cli upload --fqbn "esp8266:esp8266:nodemcuv2" --port COM3 --input-dir .\firmware
+```
+
+> **Note:** `build.ps1` automatically applies IRAM-optimizing patches to the ESP8266 core before compiling.
+
+### Method 3: PlatformIO
 
 #### Step 1: Install PlatformIO
 - VS Code Extension: Install **PlatformIO IDE**
@@ -116,6 +187,7 @@ framework = arduino
 board_build.flash_mode = dout
 board_build.f_cpu = 160000000L
 board_build.max_size = 4194304
+board_build.board_build.mmu = 4816
 lib_deps =
     me-no-dev/ESPAsyncWebServer
     me-no-dev/ESPAsyncTCP
@@ -125,30 +197,34 @@ lib_deps =
 #### Step 3: Build & Upload
 ```bash
 pio run --target upload
-pio run --target uploadfs
 ```
 
 ---
 
 ## Flashing Guide (Pre-built Binary)
 
-Download `OPX-MY-DEMON_ESP8266.ino.bin` from [Releases](https://github.com/OP-AMINUL-FF/OPX_my_demon/releases).
+Download `OPX-MY-DEMON_ESP8266_v1.0.2.bin` from [Releases](https://github.com/OP-AMINUL-FF/OPX_my_demon/releases).
 
-> **Note:** Firmware built with `4M3M` flash layout — **~3MB free for LittleFS** (maximum storage).
+> **Firmware:** Built with `4M3M` flash layout (4MB flash → ~3MB for LittleFS) and `mmu=4816` (16KB ICACHE + 48KB IRAM).
 
 ### Using esptool.py (Recommended)
 ```bash
 # Flash firmware (replace COM3 with your port)
 esptool.py --port COM3 --baud 115200 write_flash \
   --flash_mode dout --flash_size 4MB \
-  0x00000 OPX-MY-DEMON_ESP8266.ino.bin
+  0x00000 OPX-MY-DEMON_ESP8266_v1.0.2.bin
 ```
 
 ### Using ESP8266 Flash Download Tool
 1. Open **ESP Flash Download Tool (ESP8266)**
 2. Configure: SPI Speed **40MHz**, SPI Mode **DOUT**, Flash Size **32Mbit (4MB)**
-3. Address `0x00000` → select the downloaded `.bin` file
+3. Address `0x00000` → select `OPX-MY-DEMON_ESP8266_v1.0.2.bin`
 4. Press **START** (connect GPIO0 to GND, power cycle if needed)
+
+### Verify Flash (Optional)
+```bash
+esptool.py --port COM3 flash_id
+# Expected: Manufacturer: ef, Device: 4016 (for 4MB Winbond flash)
 
 ---
 
@@ -199,16 +275,21 @@ esptool.py --port COM3 --baud 115200 write_flash \
 ## File Structure
 
 ```
-OPX-MY-DEMON_ESP8266/
-  OPX-MY-DEMON_ESP8266.ino   — Main firmware (setup, loop, HTTP handlers)
-  config.h                — Constants, pin mappings, feature flags
-  attacks.h               — Core engine: packet injection, scanning, encryption
-  phishing.h              — 9 built-in HTML phishing templates (PROGMEM)
-  webui.h                 — Web UI page builders with inline CSS/JS (4 themes)
-  websockets.h            — WebSocket real-time broadcast
-  secure_ota.h            — HMAC-SHA256 firmware verification
-  language.h              — EN/ID translation table (160 entries)
-  forensic_yara.yar       — YARA rules for memory forensics
+OPX-MY-DEMON_ESP8266/            — Firmware project root
+├── OPX-MY-DEMON_ESP8266.ino     — Main firmware (setup, loop, HTTP handlers)
+├── config.h                 — Constants, pin mappings, feature flags
+├── attacks.h                — Core engine: packet injection, scanning, encryption
+├── phishing.h               — 9 built-in HTML phishing templates (PROGMEM)
+├── webui.h                  — Web UI page builders with inline CSS/JS (4 themes)
+├── websockets.h             — WebSocket real-time broadcast
+├── secure_ota.h             — HMAC-SHA256 firmware verification
+├── language.h               — EN/ID translation table (160 entries, PROGMEM)
+├── forensic_yara.yar        — YARA rules for memory forensics
+├── build.ps1                — PowerShell build script (patches + compile)
+└── patches/                 — IRAM-optimized ESP8266 core patches
+    ├── core_esp8266_waveform_pwm.cpp
+    ├── gdb_hooks.cpp
+    └── backup/              — Original core files (auto-backed up on first build)
 ```
 
 ## Persistence (state.json)
@@ -230,7 +311,9 @@ On boot, the firmware restores the last known state.
 - **Packet Injection**: Uses `wifi_send_pkt_freedom()` from ESP8266 SDK
 - **Promiscuous Mode**: Captures EAPOL handshakes and probe requests
 - **Encryption**: XXTEA with device-unique key (MAC + Chip ID + Flash ID)
-- **File System**: LittleFS (4MB flash → ~2MB for filesystem)
+- **IRAM Usage**: 43727/65536 bytes (**66%**) — 25% improvement over default (91%) via `mmu=4816`
+- **DRAM Usage**: 57304/80192 bytes (**71%**) — under the 80KB limit for stable operation
+- **File System**: LittleFS (4MB flash → ~3MB for filesystem via `4M3M` layout)
 - **Web Server**: Async (non-blocking), handles multiple clients
 - **DNS**: Captive portal via custom DNS server (resolves all to 8.8.8.8)
 

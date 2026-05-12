@@ -25,21 +25,6 @@ static void initOTASecret() {
   otaSecretInitialized = true;
 }
 
-static void computeSHA256(Stream& data, size_t len, uint8_t* hashOut) {
-  br_sha256_context ctx;
-  br_sha256_init(&ctx);
-  uint8_t buf[64];
-  size_t remaining = len;
-  while (remaining > 0) {
-    size_t toRead = (remaining > 64) ? 64 : remaining;
-    size_t read = data.readBytes(buf, toRead);
-    if (read == 0) break;
-    br_sha256_update(&ctx, buf, read);
-    remaining -= read;
-  }
-  br_sha256_out(&ctx, hashOut);
-}
-
 static void computeHMACSHA256(const uint8_t* data, size_t len, const uint8_t* key, size_t keyLen, uint8_t* hmacOut) {
   uint8_t inner[64], outer[64];
   memset(inner, 0, 64);
@@ -60,13 +45,6 @@ static void computeHMACSHA256(const uint8_t* data, size_t len, const uint8_t* ke
   br_sha256_out(&ctx, hmacOut);
 }
 
-static bool verifyOTASignature(const uint8_t* firmwareHash, const uint8_t* signature) {
-  initOTASecret();
-  uint8_t expectedSig[OTA_SIGNATURE_SIZE];
-  computeHMACSHA256(firmwareHash, OTA_HASH_SIZE, otaDeviceSecret, 32, expectedSig);
-  return memcmp(expectedSig, signature, OTA_SIGNATURE_SIZE) == 0;
-}
-
 static bool isValidHexChar(char c) {
   return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
@@ -76,15 +54,6 @@ static uint8_t hexNibble(char c) {
   if (c >= 'a' && c <= 'f') return c - 'a' + 10;
   if (c >= 'A' && c <= 'F') return c - 'A' + 10;
   return 0;
-}
-
-static String sanitizeHexString(const String& input) {
-  String result;
-  result.reserve(input.length());
-  for (size_t i = 0; i < input.length(); i++) {
-    if (isValidHexChar(input[i])) result += input[i];
-  }
-  return result;
 }
 
 #endif

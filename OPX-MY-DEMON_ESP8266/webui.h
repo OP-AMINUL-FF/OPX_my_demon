@@ -59,7 +59,7 @@ static String pageHeader() {
 
 static String navBar(uint8_t active, uint8_t lang) {
   if (active == PAGE_SCAN) {
-    return F("<div class='hdr-box'><div style='font-size:24px;font-weight:bold;color:var(--accent);text-shadow:0 0 10px var(--accent);letter-spacing:2px'>OPX-MY-DEMON</div><div style='font-size:10px;color:var(--dim);margin-top:6px'>v1.0.1 | developer op aminul ff | demo</div></div>");
+    return String(F("<div class='hdr-box'><div style='font-size:24px;font-weight:bold;color:var(--accent);text-shadow:0 0 10px var(--accent);letter-spacing:2px'>OPX-MY-DEMON</div><div style='font-size:10px;color:var(--dim);margin-top:6px'>")) + VERSION + F(" | developer op aminul ff | demo</div></div>");
   }
   static const char titleTable[] PROGMEM = "SCAN\0ATTACK\0LOGS\0SETTINGS\0FILE MANAGER\0CUSTOM HTML\0LANGUAGE\0EXTENDER\0HELP";
   const char* tp = titleTable;
@@ -78,63 +78,55 @@ static String buildScanPage(uint8_t lang, bool deauth, bool beacon, bool probe, 
                             String tableRows, String apSSID, String apIP, bool apHidden = false, String multiHtml = "",
                             bool deauthAll = false, bool rogueAP = false, bool preciseDeauth = false, bool trueDeauth = false, bool hijack = false) {
   String h = pageHeader();
-  h += "<div class='container'>";
+  h += F("<div class='container'>");
   h += navBar(PAGE_SCAN, lang);
 
   if (multiHtml.length() > 0) h += multiHtml;
 
-  h += "<div class='sec'>MENU</div>";
-  h += "<div class='grid'>";
-  h += "<a class='btn' href='/customhtml'>HTML MENU</a>";
-  h += "<a class='btn' href='/settings'>SETTINGS</a>";
-  h += "<a class='btn' href='/monitor'>MONITOR</a>";
-  h += "<a class='btn' href='/files'>FILE MANAGER</a>";
-  h += "<a class='btn' href='/?action=hide_ap'>" + String(apHidden ? "SHOW AP" : "HIDE AP") + "</a>";
-  h += "<a class='btn' href='/help'>CREDITS</a>";
-  h += "<a class='btn' href='/?action=beacon_start'>BEACON SPAM</a>";
-  h += "<a class='btn' href='/monitor'>LOGS</a>";
-  h += "<a class='btn' href='/?action=reboot'>RESTART</a>";
-  h += "</div>";
+  h += F("<div class='sec'>MENU</div><div class='grid'>"
+    "<a class='btn' href='/customhtml'>HTML MENU</a>"
+    "<a class='btn' href='/settings'>SETTINGS</a>"
+    "<a class='btn' href='/monitor'>MONITOR</a>"
+    "<a class='btn' href='/files'>FILE MANAGER</a>");
+  h += F("<a class='btn' href='/?action=hide_ap'>") + String(apHidden ? F("SHOW AP") : F("HIDE AP")) + F("</a>");
+  h += F("<a class='btn' href='/help'>CREDITS</a><a class='btn' href='/?action=beacon_start'>BEACON SPAM</a>"
+    "<a class='btn' href='/monitor'>LOGS</a>"
+    "<a class='btn' href='/?action=reboot'>RESTART</a></div>");
 
-  h += "<div class='sec'>ACTIONS</div>";
-  h += "<div class='grid'>";
-  h += "<a class='btn " + String(deauth ? "btn-red" : "") + "' href='/?action=deauth_" + String(deauth ? "stop" : "start") + "'>START DEAUTH</a>";
-  h += "<a class='btn " + String(eviltwin ? "btn-red" : "") + "' href='/?action=eviltwin_" + String(eviltwin ? "stop" : "start") + "'>START EVIL-TWIN</a>";
-  h += "<a class='btn " + String(rogueAP ? "btn-red" : "") + "' href='/?action=rogue_ap_" + String(rogueAP ? "stop" : "start") + "'>" + String(rogueAP ? "STOP ROGUE AP" : "START ROGUE AP") + "</a>";
-  h += "<a class='btn' href='/?action=count_stations'>COUNT STATIONS</a>";
-  h += "<a class='btn' href='/?action=capture_handshake'>CAPTURE HANDSHAKE</a>";
-  h += "<a class='btn " + String(deauthAll ? "btn-red" : "") + "' href='/?action=deauth_all_" + String(deauthAll ? "stop" : "start") + "'>" + String(deauthAll ? "STOP DDOS" : "DDOS ROUTER") + "</a>";
-  h += "<a class='btn " + String(probe ? "btn-red" : "") + "' href='/?action=probe_" + String(probe ? "stop" : "start") + "'>" + String(probe ? "STOP PROBE" : "START PROBE") + "</a>";
-  h += "<a class='btn " + String(hijack ? "btn-red" : "") + "' href='/?action=hijack_" + String(hijack ? "stop" : "start") + "'>" + String(hijack ? "STOP HIJACK" : "HIJACK SESSION") + "</a>";
-  h += "<a class='btn " + String(preciseDeauth ? "btn-red" : "") + "' href='/?action=precise_deauth_" + String(preciseDeauth ? "stop" : "start") + "'>" + String(preciseDeauth ? "STOP PRECISE" : "PRECISE DEAUTH") + "</a>";
-  h += "<a class='btn " + String(trueDeauth ? "btn-red" : "") + "' href='/?action=true_deauth_" + String(trueDeauth ? "stop" : "start") + "'>" + String(trueDeauth ? "STOP TRUE DEAUTH" : "TRUE DEAUTH") + "</a>";
-  h += "</div>";
+  h += F("<div class='sec'>ACTIONS</div><div class='grid'>");
+  h += F("<a class='btn ") + String(deauth ? "btn-red" : "") + F("' href='/?action=deauth_") + String(deauth ? "stop" : "start") + F("'>START DEAUTH</a>");
+  h += F("<a class='btn ") + String(eviltwin ? "btn-red" : "") + F("' href='/?action=eviltwin_") + String(eviltwin ? "stop" : "start") + F("'>START EVIL-TWIN</a>");
+  h += F("<a class='btn ") + String(rogueAP ? "btn-red" : "") + F("' href='/?action=rogue_ap_") + String(rogueAP ? "stop" : "start") + F("'>") + String(rogueAP ? "STOP ROGUE AP" : "START ROGUE AP") + F("</a>");
+  h += F("<a class='btn' href='/?action=count_stations'>COUNT STATIONS</a><a class='btn' href='/?action=capture_handshake'>CAPTURE HANDSHAKE</a>");
+  h += F("<a class='btn ") + String(deauthAll ? "btn-red" : "") + F("' href='/?action=deauth_all_") + String(deauthAll ? "stop" : "start") + F("'>") + String(deauthAll ? "STOP DDOS" : "DDOS ROUTER") + F("</a>");
+  h += F("<a class='btn ") + String(probe ? "btn-red" : "") + F("' href='/?action=probe_") + String(probe ? "stop" : "start") + F("'>") + String(probe ? "STOP PROBE" : "START PROBE") + F("</a>");
+  h += F("<a class='btn ") + String(hijack ? "btn-red" : "") + F("' href='/?action=hijack_") + String(hijack ? "stop" : "start") + F("'>") + String(hijack ? "STOP HIJACK" : "HIJACK SESSION") + F("</a>");
+  h += F("<a class='btn ") + String(preciseDeauth ? "btn-red" : "") + F("' href='/?action=precise_deauth_") + String(preciseDeauth ? "stop" : "start") + F("'>") + String(preciseDeauth ? "STOP PRECISE" : "PRECISE DEAUTH") + F("</a>");
+  h += F("<a class='btn ") + String(trueDeauth ? "btn-red" : "") + F("' href='/?action=true_deauth_") + String(trueDeauth ? "stop" : "start") + F("'>") + String(trueDeauth ? "STOP TRUE DEAUTH" : "TRUE DEAUTH") + F("</a></div>");
 
-  h += "<div class='sec'>TARGETS</div>";
-  h += "<div class='grid' style='grid-template-columns:repeat(3,1fr)'>";
-  h += "<a class='btn' href='/'>SCAN</a>";
-  h += "<a class='btn' href='/?action=deep_scan'>DEEP SCAN</a>";
-  h += "<a class='btn' href='/?action=clear'>CLEAR SELECTION</a>";
-  h += "</div>";
+  h += F("<div class='sec'>TARGETS</div><div class='grid' style='grid-template-columns:repeat(3,1fr)'>"
+    "<a class='btn' href='/'>SCAN</a>"
+    "<a class='btn' href='/?action=deep_scan'>DEEP SCAN</a>"
+    "<a class='btn' href='/?action=clear'>CLEAR SELECTION</a></div>");
 
   if (targetSSID.length() > 0) {
-    h += "<div class='mb-8' style='color:var(--accent)'>SELECTED: " + htmlEntities(targetSSID) + "</div>";
+    h += F("<div class='mb-8' style='color:var(--accent)'>SELECTED: ") + htmlEntities(targetSSID) + F("</div>");
   }
 
   if (tableRows.length() > 0) {
-    h += "<table><thead><tr><th>SSID</th><th>BSSID</th><th>CH</th><th>RSSI</th><th>SEC</th><th>VENDOR</th><th>SELECT</th></tr></thead><tbody>";
+    h += F("<table><thead><tr><th>SSID</th><th>BSSID</th><th>CH</th><th>RSSI</th><th>SEC</th><th>VENDOR</th><th>SELECT</th></tr></thead><tbody>");
     h += tableRows;
-    h += "</tbody></table>";
+    h += F("</tbody></table>");
   } else {
-    h += "<div class='empty'>SCANNING...</div>";
+    h += F("<div class='empty'>SCANNING...</div>");
   }
 
   if (capturedCount > 0) {
-    h += "<div class='sec'>CAPTURED (" + String(capturedCount) + ")</div>";
+    h += F("<div class='sec'>CAPTURED (") + String(capturedCount) + F(")</div>");
     h += capturedList;
   }
 
-  h += "</div>";
+  h += F("</div>");
   h += pageFooter();
   return h;
 }
@@ -144,79 +136,72 @@ static String buildAttackPage(uint8_t lang, bool deauth, bool beacon, bool probe
                               bool deauthAll, bool preciseDeauth, bool trueDeauth, bool rogueAP,
                               String beaconSSIDHtml, int beaconSSIDCount) {
   String h = pageHeader();
-  h += "<div class='container'>";
+  h += F("<div class='container'>");
   h += navBar(PAGE_ATTACK, lang);
 
-  h += "<div class='sec'>BEACON SPAM</div>";
-  h += "<div class='grid' style='grid-template-columns:repeat(4,1fr)'>";
-  if (beacon) h += "<a class='btn btn-red' href='/?action=beacon_stop'>STOP BEACON SPAM</a>";
-  else h += "<a class='btn' href='/?action=beacon_start'>START BEACON SPAM</a>";
-  h += "<button class='btn' onclick=\"var s=prompt('Enter SSID:');if(s)window.location='/?action=beacon_add&ssid='+encodeURIComponent(s)\">ADD</button>";
-  h += "<a class='btn' href='/?action=beacon_remove'>REMOVE</a>";
-  h += "<a class='btn' href='/?action=beacon_randomize'>RANDOMIZE</a>";
-  h += "</div>";
+  h += F("<div class='sec'>BEACON SPAM</div><div class='grid' style='grid-template-columns:repeat(4,1fr)'>");
+  if (beacon) h += F("<a class='btn btn-red' href='/?action=beacon_stop'>STOP BEACON SPAM</a>");
+  else h += F("<a class='btn' href='/?action=beacon_start'>START BEACON SPAM</a>");
+  h += F("<button class='btn' onclick=\"var s=prompt('Enter SSID:');if(s)window.location='/?action=beacon_add&ssid='+encodeURIComponent(s)\">ADD</button>"
+    "<a class='btn' href='/?action=beacon_remove'>REMOVE</a>"
+    "<a class='btn' href='/?action=beacon_randomize'>RANDOMIZE</a></div>");
 
-  h += "<div style='border:1px solid #222; padding:15px; min-height:100px; margin-bottom:30px'>";
-  h += "<div style='color:var(--dim); font-size:10px; margin-bottom:10px'>SSID LIST (" + String(beaconSSIDCount) + ")</div>";
+  h += F("<div style='border:1px solid #222; padding:15px; min-height:100px; margin-bottom:30px'>"
+    "<div style='color:var(--dim); font-size:10px; margin-bottom:10px'>SSID LIST (") + String(beaconSSIDCount) + F(")</div>");
   if (beaconSSIDHtml.length() > 0) {
     h += beaconSSIDHtml;
   } else {
-    h += "<div style='color:var(--dim); font-size:11px'>No SSIDs added. Use ADD to add beacon SSIDs.</div>";
+    h += F("<div style='color:var(--dim); font-size:11px'>No SSIDs added. Use ADD to add beacon SSIDs.</div>");
   }
-  h += "</div>";
+  h += F("</div>");
 
-  h += "<div class='sec'>ATTACK CONFIG</div>";
-  h += "<p style='margin-bottom:10px'>Target: <span style='color:var(--accent)'>" + (targetSSID.length() > 0 ? htmlEntities(targetSSID) : "NONE") + "</span></p>";
-  
-  h += "<div style='margin-bottom:10px'>Phishing Page:</div>";
-  h += "<select onchange=\"window.location='/attack?page='+this.value\" style='margin-bottom:20px'>";
-  h += "<option value='0'" + String(phishingPage==0?" selected":"") + ">Facebook</option>";
-  h += "<option value='1'" + String(phishingPage==1?" selected":"") + ">Tenda</option>";
-  h += "<option value='2'" + String(phishingPage==2?" selected":"") + ">Generic ISP</option>";
-  h += "<option value='3'" + String(phishingPage==3?" selected":"") + ">Router Update</option>";
-  h += "<option value='4'" + String(phishingPage==4?" selected":"") + ">Maintenance</option>";
-  h += "<option value='5'" + String(phishingPage==5?" selected":"") + ">Custom</option>";
-  h += "<option value='6'" + String(phishingPage==6?" selected":"") + ">Google</option>";
-  h += "<option value='7'" + String(phishingPage==7?" selected":"") + ">Instagram</option>";
-  h += "</select>";
+  h += F("<div class='sec'>ATTACK CONFIG</div>");
+  h += F("<p style='margin-bottom:10px'>Target: <span style='color:var(--accent)'>") + (targetSSID.length() > 0 ? htmlEntities(targetSSID) : F("NONE")) + F("</span></p>");
 
-  h += "</div>";
+  h += F("<div style='margin-bottom:10px'>Phishing Page:</div>"
+    "<select onchange=\"window.location='/attack?page='+this.value\" style='margin-bottom:20px'>");
+  h += F("<option value='0'") + String(phishingPage==0?F(" selected"):F("")) + F(">Facebook</option>");
+  h += F("<option value='1'") + String(phishingPage==1?F(" selected"):F("")) + F(">Tenda</option>");
+  h += F("<option value='2'") + String(phishingPage==2?F(" selected"):F("")) + F(">Generic ISP</option>");
+  h += F("<option value='3'") + String(phishingPage==3?F(" selected"):F("")) + F(">Router Update</option>");
+  h += F("<option value='4'") + String(phishingPage==4?F(" selected"):F("")) + F(">Maintenance</option>");
+  h += F("<option value='5'") + String(phishingPage==5?F(" selected"):F("")) + F(">Custom</option>");
+  h += F("<option value='6'") + String(phishingPage==6?F(" selected"):F("")) + F(">Google</option>");
+  h += F("<option value='7'") + String(phishingPage==7?F(" selected"):F("")) + F(">Instagram</option>");
+  h += F("</select></div>");
   h += pageFooter();
   return h;
 }
 
 static String buildMonitorPage(uint8_t lang, unsigned long deauthPkts, unsigned long beaconPkts, unsigned long probePkts, unsigned long totalPkts, String logs) {
   String h = pageHeader();
-  h += "<div class='container'>";
+  h += F("<div class='container'>");
   h += navBar(PAGE_MONITOR, lang);
 
-  h += "<div class='sec'>Packet Statistics</div>";
-  h += "<table><thead><tr><th>Type</th><th>Count</th></tr></thead><tbody>";
-  h += "<tr><td>Deauth</td><td>" + String(deauthPkts) + "</td></tr>";
-  h += "<tr><td>Beacon</td><td>" + String(beaconPkts) + "</td></tr>";
-  h += "<tr><td>Probe</td><td>" + String(probePkts) + "</td></tr>";
-  h += "<tr><td>Total</td><td>" + String(totalPkts) + "</td></tr>";
-  h += "</tbody></table>";
+  h += F("<div class='sec'>Packet Statistics</div>"
+    "<table><thead><tr><th>Type</th><th>Count</th></tr></thead><tbody>"
+    "<tr><td>Deauth</td><td>") + String(deauthPkts) + F("</td></tr>"
+    "<tr><td>Beacon</td><td>") + String(beaconPkts) + F("</td></tr>"
+    "<tr><td>Probe</td><td>") + String(probePkts) + F("</td></tr>"
+    "<tr><td>Total</td><td>") + String(totalPkts) + F("</td></tr></tbody></table>");
 
-  h += "<div class='sec'>Power Config</div>";
-  h += "<div class='info-grid'>";
-  h += "<div class='info-item'><div class='lbl'>Deauth Burst</div><div class='val'>" + String(DEAUTH_BURST_COUNT) + " pkt</div></div>";
-  h += "<div class='info-item'><div class='lbl'>Beacon Burst</div><div class='val'>" + String(BEACON_BURST_COUNT) + " pkt</div></div>";
-  h += "<div class='info-item'><div class='lbl'>Probe Burst</div><div class='val'>" + String(PROBE_BURST_COUNT) + " pkt</div></div>";
-  h += "<div class='info-item'><div class='lbl'>Channel</div><div class='val'>1-" + String(CHANNEL_MAX) + " (hop)</div></div>";
-  h += "</div>";
+  h += F("<div class='sec'>Power Config</div><div class='info-grid'>"
+    "<div class='info-item'><div class='lbl'>Deauth Burst</div><div class='val'>") + String(DEAUTH_BURST_COUNT) + F(" pkt</div></div>"
+    "<div class='info-item'><div class='lbl'>Beacon Burst</div><div class='val'>") + String(BEACON_BURST_COUNT) + F(" pkt</div></div>"
+    "<div class='info-item'><div class='lbl'>Probe Burst</div><div class='val'>") + String(PROBE_BURST_COUNT) + F(" pkt</div></div>"
+    "<div class='info-item'><div class='lbl'>Channel</div><div class='val'>1-") + String(CHANNEL_MAX) + F(" (hop)</div></div></div>");
 
-  h += "<div class='mt-8 mb-8'><a class='btn' href='/monitor'>REFRESH</a></div>";
+  h += F("<div class='mt-8 mb-8'><a class='btn' href='/monitor'>REFRESH</a></div>");
 
-  h += "<div class='sec'>System Logs</div>";
-  if (logs.indexOf("empty") == -1) {
-    h += "<div class='log-box'>" + logs + "</div>";
-    h += "<div class='mt-8'><a class='btn btn-red' href='/?action=clear_logs'>CLEAR LOGS</a></div>";
+  h += F("<div class='sec'>System Logs</div>");
+  if (logs.indexOf(F("empty")) == -1) {
+    h += F("<div class='log-box'>") + logs + F("</div>");
+    h += F("<div class='mt-8'><a class='btn btn-red' href='/?action=clear_logs'>CLEAR LOGS</a></div>");
   } else {
-    h += "<div class='empty'>No Logs</div>";
+    h += F("<div class='empty'>No Logs</div>");
   }
 
-  h += "</div>";
+  h += F("</div>");
   h += pageFooter();
   return h;
 }
@@ -226,105 +211,94 @@ static String buildSettingsPage(uint8_t lang, String version, String board, Stri
                                 bool wifiClientConnected, String wifiClientSSID, bool internetSharing,
                                 String wifiScanRows) {
   String h = pageHeader();
-  h += "<div class='container'>";
+  h += F("<div class='container'>");
   h += navBar(PAGE_SETTINGS, lang);
 
-  h += "<div class='sec'>THEME</div>";
-  h += "<div style='margin-bottom:10px;color:var(--dim)'>Select your theme</div>";
-  h += "<div class='grid'>";
-  h += "<button class='btn' onclick='setTheme(\"CYBER\")'>CYBER</button>";
-  h += "<button class='btn' onclick='setTheme(\"RED\")'>RED</button>";
-  h += "<button class='btn' onclick='setTheme(\"TERMINAL\")'>TERMINAL</button>";
-  h += "<button class='btn' onclick='setTheme(\"VAPORWAVE\")'>VAPORWAVE</button>";
-  h += "</div>";
+  h += F("<div class='sec'>THEME</div><div style='margin-bottom:10px;color:var(--dim)'>Select your theme</div><div class='grid'>"
+    "<button class='btn' onclick='setTheme(\"CYBER\")'>CYBER</button>"
+    "<button class='btn' onclick='setTheme(\"RED\")'>RED</button>"
+    "<button class='btn' onclick='setTheme(\"TERMINAL\")'>TERMINAL</button>"
+    "<button class='btn' onclick='setTheme(\"VAPORWAVE\")'>VAPORWAVE</button></div>");
 
-  h += "<div class='sec'>DISPLAY</div>";
-  h += "<div style='margin-bottom:10px;color:var(--dim)'>Display sleep timeout</div>";
-  h += "<div class='grid' style='grid-template-columns:repeat(auto-fit,minmax(100px,1fr))'>";
-  h += "<a class='btn' href='/?action=display_timeout&val=15'>15 SECONDS</a>";
-  h += "<a class='btn' href='/?action=display_timeout&val=30'>30 SECONDS</a>";
-  h += "<a class='btn' style='border-color:var(--accent);color:var(--accent)' href='/?action=display_timeout&val=60'>60 SECONDS</a>";
-  h += "<a class='btn' href='/?action=display_timeout&val=120'>120 SECONDS</a>";
-  h += "<a class='btn' href='/?action=display_timeout&val=0'>NO SLEEP</a>";
-  h += "</div>";
+  h += F("<div class='sec'>DISPLAY</div>"
+    "<div style='margin-bottom:10px;color:var(--dim)'>Display sleep timeout</div>"
+    "<div class='grid' style='grid-template-columns:repeat(auto-fit,minmax(100px,1fr))'>"
+    "<a class='btn' href='/?action=display_timeout&val=15'>15 SECONDS</a>"
+    "<a class='btn' href='/?action=display_timeout&val=30'>30 SECONDS</a>"
+    "<a class='btn' style='border-color:var(--accent);color:var(--accent)' href='/?action=display_timeout&val=60'>60 SECONDS</a>"
+    "<a class='btn' href='/?action=display_timeout&val=120'>120 SECONDS</a>"
+    "<a class='btn' href='/?action=display_timeout&val=0'>NO SLEEP</a></div>");
 
-  h += "<div class='sec'>SYSTEM HEALTH</div>";
-  h += "<div class='info-grid' style='margin-bottom:15px'>";
-  h += "<div class='info-item'><div class='lbl'>Free Heap</div><div class='val'>" + String(ESP.getFreeHeap()) + " B</div></div>";
-  h += "<div class='info-item'><div class='lbl'>Heap Min</div><div class='val'>" + String(heapLowMark == 0xFFFFFFFF ? ESP.getFreeHeap() : heapLowMark) + " B</div></div>";
-  h += "<div class='info-item'><div class='lbl'>Uptime</div><div class='val'>" + String((millis() - startTime) / 1000) + "s</div></div>";
-  h += "<div class='info-item'><div class='lbl'>Captured</div><div class='val'>" + String(capturedCount) + "</div></div>";
-  h += "</div>";
+  h += F("<div class='sec'>SYSTEM HEALTH</div><div class='info-grid' style='margin-bottom:15px'>"
+    "<div class='info-item'><div class='lbl'>Free Heap</div><div class='val'>") + String(freeHeap) + F(" B</div></div>"
+    "<div class='info-item'><div class='lbl'>Heap Min</div><div class='val'>") + String(heapLowMark == 0xFFFFFFFF ? ESP.getFreeHeap() : heapLowMark) + F(" B</div></div>"
+    "<div class='info-item'><div class='lbl'>Uptime</div><div class='val'>") + String((millis() - startTime) / 1000) + F("s</div></div>"
+    "<div class='info-item'><div class='lbl'>Captured</div><div class='val'>") + String(capturedCount) + F("</div></div></div>");
 
-  h += "<div class='sec'>SECURITY</div>";
-  h += "<div style='margin-bottom:10px;color:var(--dim)'>Set PIN to protect sensitive actions</div>";
-  h += "<form action='/' method='get' style='margin-bottom:8px'>";
-  h += "<input type='hidden' name='action' value='pin_set'>";
-  h += "<input type='password' name='val' placeholder='4-8 digit PIN' minlength='4' maxlength='8' style='margin-bottom:8px'>";
-  h += "<button class='btn' style='border-color:var(--accent);color:var(--accent)' type='submit'>SET PIN</button>";
-  h += "</form>";
-  h += "<a class='btn' style='border-color:#f00;color:#f00' href='/?action=pin_clear'>CLEAR PIN</a>";
+  h += F("<div class='sec'>SECURITY</div>"
+    "<div style='margin-bottom:10px;color:var(--dim)'>Set PIN to protect sensitive actions</div>"
+    "<form action='/' method='get' style='margin-bottom:8px'>"
+    "<input type='hidden' name='action' value='pin_set'>"
+    "<input type='password' name='val' placeholder='4-8 digit PIN' minlength='4' maxlength='8' style='margin-bottom:8px'>"
+    "<button class='btn' style='border-color:var(--accent);color:var(--accent)' type='submit'>SET PIN</button></form>"
+    "<a class='btn' style='border-color:#f00;color:#f00' href='/?action=pin_clear'>CLEAR PIN</a>");
 
-  h += "<div class='sec'>GENERAL</div>";
-  h += "<div style='margin-bottom:10px;color:var(--dim)'>Automatically select multiple SSID from the same Router.</div>";
-  h += "<div class='grid' style='grid-template-columns:100px 100px'>";
-  h += "<a class='btn' style='border-color:var(--accent);color:var(--accent)' href='/?action=auto_select&val=0'>OFF</a>";
-  h += "<a class='btn' href='/?action=auto_select&val=1'>ALL</a>";
-  h += "</div>";
+  h += F("<div class='sec'>GENERAL</div>"
+    "<div style='margin-bottom:10px;color:var(--dim)'>Automatically select multiple SSID from the same Router.</div>"
+    "<div class='grid' style='grid-template-columns:100px 100px'>"
+    "<a class='btn' style='border-color:var(--accent);color:var(--accent)' href='/?action=auto_select&val=0'>OFF</a>"
+    "<a class='btn' href='/?action=auto_select&val=1'>ALL</a></div>");
 
-  h += "<div class='sec'>ACCESS POINT</div>";
-  h += "<form action='/' method='get'>";
-  h += "<input type='hidden' name='action' value='save_ap'>";
-  h += "<div style='margin-bottom:10px'>SSID:</div><input type='text' name='ssid' value='" + htmlEntities(apSSID) + "' class='mb-8'>";
-  h += "<div style='margin-bottom:10px'>PASS:</div><input type='text' name='pass' value='" + htmlEntities(apPass) + "' class='mb-8'>";
-  h += "<div class='mt-8 mb-8'><button class='btn' style='border-color:var(--accent);color:var(--accent)' type='submit'>SAVE SETTINGS</button></div>";
-  h += "</form>";
+  h += F("<div class='sec'>ACCESS POINT</div>"
+    "<form action='/' method='get'>"
+    "<input type='hidden' name='action' value='save_ap'>"
+    "<div style='margin-bottom:10px'>SSID:</div><input type='text' name='ssid' value='") + htmlEntities(apSSID) + F("' class='mb-8'>"
+    "<div style='margin-bottom:10px'>PASS:</div><input type='text' name='pass' value='") + htmlEntities(apPass) + F("' class='mb-8'>"
+    "<div class='mt-8 mb-8'><button class='btn' style='border-color:var(--accent);color:var(--accent)' type='submit'>SAVE SETTINGS</button></div></form>");
 
-  h += "<div class='grid' style='grid-template-columns:1fr 1fr; margin-top:30px'>";
-  h += "<a class='btn btn-red' href='/?action=reboot'>RESTART</a>";
-  h += "<a class='btn btn-red' href='/?action=reset'>FACTORY RESET</a>";
-  h += "</div>";
+  h += F("<div class='grid' style='grid-template-columns:1fr 1fr; margin-top:30px'>"
+    "<a class='btn btn-red' href='/?action=reboot'>RESTART</a>"
+    "<a class='btn btn-red' href='/?action=reset'>FACTORY RESET</a></div>");
 
-  h += "<div class='sec' style='margin-top:20px;'>INTERNET FORWARDING (NAT)</div>";
-  h += "<p style='font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5'>" + String(lang==LANG_INDONESIAN?"Hubungkan ESP8266 ke jaringan WiFi nyata untuk menyediakan internet ke korban Rogue AP.":"Connect ESP8266 to a real WiFi network to provide internet to Rogue AP victims.") + "</p>";
+  h += F("<div class='sec' style='margin-top:20px;'>INTERNET FORWARDING (NAT)</div>"
+    "<p style='font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5'>") + String(lang==LANG_INDONESIAN?F("Hubungkan ESP8266 ke jaringan WiFi nyata untuk menyediakan internet ke korban Rogue AP."):F("Connect ESP8266 to a real WiFi network to provide internet to Rogue AP victims.")) + F("</p>");
 
-  h += "<div class='info-grid' style='margin-bottom:15px'>";
+  h += F("<div class='info-grid' style='margin-bottom:15px'>");
   if (wifiClientConnected) {
-    h += "<div class='info-item'><div class='lbl'>Status</div><div class='val' style='color:#4caf50'>Connected</div></div>";
-    h += "<div class='info-item'><div class='lbl'>SSID</div><div class='val'>" + htmlEntities(wifiClientSSID) + "</div></div>";
-    h += "<div class='info-item'><div class='lbl'>Sharing</div><div class='val " + String(internetSharing?"green":"red") + "'>" + String(internetSharing?"ACTIVE":"INACTIVE") + "</div></div>";
+    h += F("<div class='info-item'><div class='lbl'>Status</div><div class='val' style='color:#4caf50'>Connected</div></div>"
+      "<div class='info-item'><div class='lbl'>SSID</div><div class='val'>") + htmlEntities(wifiClientSSID) + F("</div></div>"
+      "<div class='info-item'><div class='lbl'>Sharing</div><div class='val ") + String(internetSharing?F("green"):F("red")) + F("'>") + String(internetSharing?F("ACTIVE"):F("INACTIVE")) + F("</div></div>");
   } else {
-    h += "<div class='info-item'><div class='lbl'>Status</div><div class='val' style='color:#f44336'>Disconnected</div></div>";
+    h += F("<div class='info-item'><div class='lbl'>Status</div><div class='val' style='color:#f44336'>Disconnected</div></div>");
   }
-  h += "</div>";
+  h += F("</div>");
 
   if (wifiScanRows.length() > 0) {
-    h += "<div style='margin-bottom:10px;color:var(--dim)'>Scanned Networks:</div>";
-    h += "<table><thead><tr><th>SSID</th><th>BSSID</th><th>CH</th><th>RSSI</th><th>SEC</th><th>Vendor</th></tr></thead><tbody>";
+    h += F("<div style='margin-bottom:10px;color:var(--dim)'>Scanned Networks:</div>"
+      "<table><thead><tr><th>SSID</th><th>BSSID</th><th>CH</th><th>RSSI</th><th>SEC</th><th>Vendor</th></tr></thead><tbody>");
     h += wifiScanRows;
-    h += "</tbody></table>";
+    h += F("</tbody></table>");
   }
 
-  h += "<div class='flex' style='margin-top:10px'>";
-  h += "<a class='btn' href='/?action=wifi_scan'>📶 SCAN NETWORKS</a>";
+  h += F("<div class='flex' style='margin-top:10px'>"
+    "<a class='btn' href='/?action=wifi_scan'>SCAN NETWORKS</a>");
   if (wifiClientConnected) {
-    h += "<a class='btn btn-red' href='/?action=wifi_disconnect'>⏹ DISCONNECT</a>";
+    h += F("<a class='btn btn-red' href='/?action=wifi_disconnect'>DISCONNECT</a>");
     if (internetSharing) {
-      h += "<a class='btn btn-red' href='/?action=wifi_sharing_stop'>⏹ DISABLE SHARING</a>";
+      h += F("<a class='btn btn-red' href='/?action=wifi_sharing_stop'>DISABLE SHARING</a>");
     } else {
-      h += "<a class='btn' style='border-color:var(--accent);color:var(--accent)' href='/?action=wifi_sharing_start'>▶ ENABLE SHARING</a>";
+      h += F("<a class='btn' style='border-color:var(--accent);color:var(--accent)' href='/?action=wifi_sharing_start'>ENABLE SHARING</a>");
     }
   }
-  h += "</div>";
+  h += F("</div>");
 
-  h += "<form action='/' method='get' class='mt-12' style='display:" + String(wifiClientConnected?"none":"block") + "'>";
-  h += "<input type='hidden' name='action' value='wifi_connect'>";
-  h += "<div style='margin-bottom:10px'>SSID:</div><input type='text' name='wifi_ssid' placeholder='Target WiFi SSID' required>";
-  h += "<div style='margin-bottom:10px;margin-top:10px'>PASS:</div><input type='password' name='wifi_pass' placeholder='WiFi password' required>";
-  h += "<button class='btn' style='border-color:var(--accent);color:var(--accent);margin-top:10px' type='submit'>▶ CONNECT</button>";
-  h += "</form>";
+  h += F("<form action='/' method='get' class='mt-12' style='display:") + String(wifiClientConnected?F("none"):F("block")) + F("'>"
+    "<input type='hidden' name='action' value='wifi_connect'>"
+    "<div style='margin-bottom:10px'>SSID:</div><input type='text' name='wifi_ssid' placeholder='Target WiFi SSID' required>"
+    "<div style='margin-bottom:10px;margin-top:10px'>PASS:</div><input type='password' name='wifi_pass' placeholder='WiFi password' required>"
+    "<button class='btn' style='border-color:var(--accent);color:var(--accent);margin-top:10px' type='submit'>CONNECT</button></form>");
 
-  h += "</div>";
+  h += F("</div>");
   h += pageFooter();
   return h;
 }
@@ -571,7 +545,7 @@ static String buildEditPage(uint8_t lang, String filename, String content) {
   String h = pageHeader();
   h += "<div class='container'>";
   h += "<div class='hdr-box'><h1>EDIT: " + filename + "</h1></div>";
-  h += "<form action='/' method='post' enctype='application/x-www-form-urlencoded'>";
+  h += "<form action='/' method='get'>";
   h += "<input type='hidden' name='action' value='save_file'>";
   h += "<input type='hidden' name='file' value='" + filename + "'>";
   h += "<textarea name='content' style='width:100%;height:450px;background:#000;color:var(--accent);border:1px solid var(--dim);font-family:monospace;font-size:12px;padding:10px;margin-bottom:10px;'>" + content + "</textarea>";

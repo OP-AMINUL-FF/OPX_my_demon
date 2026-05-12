@@ -12,7 +12,7 @@ struct LangEntry {
   const char* id;
 };
 
-static const LangEntry langTable[] = {
+static const LangEntry langTable[] PROGMEM = {
   {"app_name", "NETHERCAP", "NETHERCAP"},
   {"scan", "Scan", "Pindai"},
   {"attack", "Attack", "Serangan"},
@@ -163,8 +163,12 @@ static const int langCount = sizeof(langTable) / sizeof(langTable[0]);
 
 static String tr(const char* key, uint8_t lang) {
   for (int i = 0; i < langCount; i++) {
-    if (strcmp(key, langTable[i].key) == 0) {
-      return String(lang == LANG_ENGLISH ? langTable[i].en : langTable[i].id);
+    const char* k = (const char*)pgm_read_ptr(&langTable[i].key);
+    if (strcmp_P(key, k) == 0) {
+      const char* v = (const char*)pgm_read_ptr(lang == LANG_ENGLISH ? &langTable[i].en : &langTable[i].id);
+      char buf[64];
+      strcpy_P(buf, v);
+      return String(buf);
     }
   }
   return String(key);
