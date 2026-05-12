@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPX-MY-DEMON | Advanced Web Deployment</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles: Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: '#00ff41', dark: '#040404', card: '#0a0a0a' },
+                    fontFamily: { sans: ['Outfit', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { background-color: #040404; color: #ffffff; overflow-x: hidden; }
+        
+        /* Advanced Blurred Background Animation */
+        #bg-canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; filter: blur(80px); opacity: 0.4;
+        }
+        
+        .glow-spot {
+            position: fixed; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(0, 255, 65, 0.15) 0%, transparent 70%);
+            border-radius: 50%; pointer-events: none; z-index: 1;
+            transform: translate(-50%, -50%); will-change: left, top;
+            transition: all 0.15s ease-out;
+        }
+
+        #dot-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 40px 40px; z-index: 2; pointer-events: none;
+        }
+
+        .glass { background: rgba(10, 10, 10, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass:hover { border-color: rgba(0, 255, 65, 0.2); }
+        
+        .btn-brand { background: #00ff41; color: #000; font-weight: 800; transition: all 0.2s; }
+        .btn-brand:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(0, 255, 65, 0.4); background: #00e03a; }
+        .btn-brand:active { transform: translateY(0); }
+
+        .section-in { animation: sectionIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes sectionIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); background-size: 200% 100%; animation: shimmer 2s infinite; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+        .popup { transform: scale(0.9); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; }
+        .popup.active { transform: scale(1); opacity: 1; pointer-events: auto; }
+        .readme-content h1 { font-size: 1.75rem; font-weight: 800; margin: 2rem 0 1rem; letter-spacing: -0.02em; }
+        .readme-content h2 { font-size: 1.25rem; font-weight: 700; margin: 1.75rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .readme-content h3 { font-size: 1.1rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
+        .readme-content p { margin: 0.75rem 0; line-height: 1.7; color: #9ca3af; }
+        .readme-content ul, .readme-content ol { margin: 0.5rem 0; padding-left: 1.5rem; color: #9ca3af; }
+        .readme-content li { margin: 0.25rem 0; line-height: 1.6; }
+        .readme-content a { color: #00ff41; text-decoration: underline; }
+        .readme-content pre { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 1rem; padding: 1.25rem; overflow-x: auto; margin: 1rem 0; }
+        .readme-content code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+        .readme-content pre code { background: none; padding: 0; }
+        .readme-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+        .readme-content th, .readme-content td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .readme-content th { font-weight: 700; color: #fff; background: rgba(255,255,255,0.03); }
+        .readme-content td { color: #9ca3af; }
+        .readme-content hr { border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 2rem 0; }
+        .readme-content blockquote { border-left: 3px solid #00ff41; padding-left: 1rem; color: #6b7280; margin: 1rem 0; }
+        .readme-content img { max-width: 100%; border-radius: 0.75rem; margin: 1rem 0; }
+        .readme-content strong { color: #e5e7eb; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <div id="dot-grid"></div>
+    <div id="mouse-glow" class="glow-spot"></div>
+    <div id="bg-canvas-container">
+        <div style="position: absolute; top: 20%; left: 30%; width: 400px; height: 400px; background: #00ff41; border-radius: 50%; opacity: 0.2; animation: float 10s infinite alternate;"></div>
+        <div style="position: absolute; bottom: 20%; right: 30%; width: 500px; height: 500px; background: #0088ff; border-radius: 50%; opacity: 0.1; animation: float 15s infinite alternate-reverse;"></div>
+    </div>
+
+    <style>@keyframes float { from { transform: translate(0, 0); } to { transform: translate(100px, 50px); } }</style>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 border-b border-white/5 bg-black/40 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-4 cursor-pointer" onclick="navigate('home')">
+                <img src="https://raw.githubusercontent.com/OP-AMINUL-FF/OPX_my_demon/master/channels4_profile.jpg" onerror="this.style.display='none'" class="w-11 h-11 rounded-xl object-cover flex-shrink-0">
+                <div class="flex flex-col leading-none">
+                    <span class="font-bold text-xl tracking-tighter">OPX-MY-DEMON</span>
+                    <span id="nav-desc" class="text-[10px] text-brand font-bold tracking-[0.2em] uppercase">Advanced Security</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 text-sm font-bold text-gray-500">
+                <button onclick="navigate('home')" class="hover:text-white transition-colors">DASHBOARD</button>
+                <button onclick="navigate('firmware')" class="hover:text-white transition-colors">FLASHER</button>
+                <a href="#readme" class="hover:text-white transition-colors">README</a>
+                <a href="#about" class="hover:text-white transition-colors">ABOUT ME</a>
+                <a href="#tool-info" class="hover:text-white transition-colors">ABOUT TOOL</a>
+                <span class="w-px h-5 bg-white/10"></span>
+                <a href="https://www.youtube.com/@OPAMINULFF" target="_blank" class="px-2.5 py-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-all">YOUTUBE</a>
+                <a href="https://t.me/OPAMINULFF" target="_blank" class="px-2.5 py-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-all">TG CH</a>
+                <a href="https://t.me/8WHo_D21GvpkZGM1" target="_blank" class="px-2.5 py-1.5 rounded-lg hover:bg-white/5 hover:text-white transition-all">TG GP</a>
+                <a href="https://opaminulff.netlify.app/" target="_blank" class="px-5 py-2 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">WEBSITE</a>
+                <a href="https://github.com/OP-AMINUL-FF/OPX_my_demon" target="_blank" class="px-5 py-2 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all">GITHUB</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ======== HOME SECTION ======== -->
+    <div id="view-home" class="view min-h-screen pt-28 px-4 section-in">
+        <div class="max-w-7xl mx-auto">
+
+            <!-- Hero -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center py-16">
+                <div class="space-y-8">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand/5 border border-brand/20 text-brand text-xs font-bold uppercase tracking-widest">
+                        <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-brand"></span></span>
+                        <span id="hero-version">LOADING...</span>
+                    </div>
+                    <h1 class="text-6xl md:text-8xl font-extrabold tracking-tighter leading-[0.85]">
+                        OPX-MY-DEMON<br/><span class="text-gray-500">Web Flasher</span>
+                    </h1>
+                    <p class="text-gray-400 text-lg md:text-xl max-w-lg leading-relaxed">
+                        Browser-based ESP8266 firmware deployment tool. 
+                        No software install required — just open, select, and flash.
+                    </p>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <button onclick="navigate('firmware')" class="btn-brand px-8 py-4 rounded-2xl flex items-center gap-3 text-sm">
+                            INSTALL MY PROGRAM <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </button>
+                        <a href="#releases" class="px-8 py-4 rounded-2xl border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-all text-sm font-bold">VIEW RELEASES</a>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="glass p-10 rounded-[40px] relative z-10 space-y-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-brand shrink-0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg></div>
+                            <div><h4 class="font-bold text-sm">Hardware</h4><p class="text-xs text-gray-500">ESP8266 NodeMCU, Wemos D1</p></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-brand shrink-0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+                            <div><h4 class="font-bold text-sm">Security</h4><p class="text-xs text-gray-500">XXTEA Encrypted Core V2</p></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-brand shrink-0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                            <div><h4 class="font-bold text-sm">Speed</h4><p class="text-xs text-gray-500">460800 Baud Flash, 1-Click Deploy</p></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-brand shrink-0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                            <div><h4 class="font-bold text-sm">Zero Install</h4><p class="text-xs text-gray-500">Web Serial API — No Drivers Needed</p></div>
+                        </div>
+                    </div>
+                    <div class="absolute -top-20 -right-20 w-80 h-80 bg-brand/10 rounded-full blur-3xl"></div>
+                </div>
+            </div>
+
+            <!-- README Section -->
+            <div id="readme" class="py-20 scroll-mt-28">
+                <div class="flex items-center gap-4 mb-12">
+                    <div class="w-10 h-10 bg-brand/10 rounded-2xl flex items-center justify-center text-brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+                    <h2 class="text-4xl font-bold tracking-tight">README</h2>
+                </div>
+                <div id="readme-container" class="glass rounded-[40px] p-10 md:p-16">
+                    <div class="space-y-3">
+                        <div class="h-5 w-full bg-white/5 rounded shimmer"></div>
+                        <div class="h-5 w-3/4 bg-white/5 rounded shimmer"></div>
+                        <div class="h-5 w-1/2 bg-white/5 rounded shimmer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Releases Section -->
+            <div id="releases" class="py-20 scroll-mt-28">
+                <div class="flex items-center gap-4 mb-12">
+                    <div class="w-10 h-10 bg-brand/10 rounded-2xl flex items-center justify-center text-brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+                    <h2 class="text-4xl font-bold tracking-tight">Releases &amp; Changelog</h2>
+                </div>
+                <div id="releases-container" class="space-y-4">
+                    <div class="flex items-center gap-4 p-8 glass rounded-3xl">
+                        <div class="spinner"></div>
+                        <p class="text-gray-500">Loading releases from GitHub...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Me Section -->
+            <div id="about" class="py-20 scroll-mt-28">
+                <div class="flex items-center gap-4 mb-12">
+                    <div class="w-10 h-10 bg-brand/10 rounded-2xl flex items-center justify-center text-brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    <h2 class="text-4xl font-bold tracking-tight">About Me</h2>
+                </div>
+                <div id="about-me-container" class="glass rounded-[40px] p-10 md:p-16">
+                    <div class="flex items-center gap-6 mb-8">
+                        <div class="w-16 h-16 rounded-full bg-white/5 shimmer"></div>
+                        <div><div class="h-6 w-48 bg-white/5 rounded shimmer"></div><div class="h-4 w-32 bg-white/5 rounded mt-2 shimmer"></div></div>
+                    </div>
+                    <div class="h-4 w-full bg-white/5 rounded shimmer mb-2"></div>
+                    <div class="h-4 w-3/4 bg-white/5 rounded shimmer"></div>
+                </div>
+            </div>
+
+            <!-- About The Tool Section -->
+            <div id="tool-info" class="py-20 scroll-mt-28">
+                <div class="flex items-center gap-4 mb-12">
+                    <div class="w-10 h-10 bg-brand/10 rounded-2xl flex items-center justify-center text-brand"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+                    <h2 class="text-4xl font-bold tracking-tight">About This Tool</h2>
+                </div>
+                <div id="tool-info-container" class="glass rounded-[40px] p-10 md:p-16">
+                    <div class="h-4 w-full bg-white/5 rounded shimmer mb-2"></div>
+                    <div class="h-4 w-3/4 bg-white/5 rounded shimmer mb-2"></div>
+                    <div class="h-4 w-1/2 bg-white/5 rounded shimmer"></div>
+                </div>
+            </div>
+
+            <div class="text-center py-12 text-gray-600 text-xs border-t border-white/5">
+                OPX-MY-DEMON Web Flasher &mdash; Open Source &middot; MIT License
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== FIRMWARE SELECTION VIEW ======== -->
+    <div id="view-firmware" class="view min-h-screen pt-40 px-8 hidden section-in">
+        <div class="max-w-4xl mx-auto text-center space-y-16">
+            <div class="space-y-4">
+                <h2 class="text-5xl font-bold tracking-tight">Select Firmware</h2>
+                <p class="text-gray-500">Upload manually or choose a release from our GitHub repository.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Manual Upload -->
+                <div class="glass p-10 rounded-3xl text-left flex flex-col justify-between">
+                    <div>
+                        <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-6 text-brand"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+                        <h3 class="text-xl font-bold mb-2">Manual Binary</h3>
+                        <p class="text-gray-500 text-sm mb-8">Drop your own .bin file here to flash custom builds.</p>
+                    </div>
+                    <input type="file" id="file-input" class="hidden" accept=".bin" onchange="handleManualUpload(event)">
+                    <button onclick="document.getElementById('file-input').click()" class="w-full py-4 rounded-xl border border-white/10 hover:bg-white/5 font-bold transition-all">CHOOSE FILE</button>
+                </div>
+
+                <!-- GitHub Selection -->
+                <div class="glass p-10 rounded-3xl text-left">
+                    <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-6 text-brand"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></div>
+                    <h3 class="text-xl font-bold mb-2">GitHub Releases</h3>
+                    <p class="text-gray-500 text-sm mb-6">Select from our official stable and beta releases.</p>
+                    <select id="github-dropdown" class="w-full bg-dark/50 border border-white/10 rounded-xl p-4 text-sm font-bold mb-6 appearance-none focus:border-brand outline-none transition-all">
+                        <option value="">Loading releases...</option>
+                    </select>
+                    <button onclick="handleGitHubSelection()" class="w-full py-4 rounded-xl bg-white text-black font-bold transition-all hover:bg-gray-200">CONTINUE →</button>
+                </div>
+            </div>
+            
+            <button onclick="navigate('home')" class="text-gray-600 hover:text-white transition-colors">← Back to home</button>
+        </div>
+    </div>
+
+    <!-- ======== PORT SELECTION POPUP ======== -->
+    <div id="port-modal" class="fixed inset-0 z-[200] flex items-center justify-center px-6 transition-all duration-300 invisible opacity-0">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-md" onclick="closePortModal()"></div>
+        <div class="popup glass p-10 rounded-[40px] max-w-lg w-full relative z-[201] text-center space-y-10">
+            <div class="w-20 h-20 bg-brand/10 text-brand rounded-full flex items-center justify-center mx-auto text-3xl"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg></div>
+            <div class="space-y-4">
+                <h3 class="text-3xl font-bold">Connect Device</h3>
+                <p class="text-gray-500 leading-relaxed">Ensure your ESP8266 is connected via USB. A browser popup will appear to select the COM port.</p>
+            </div>
+            <button onclick="requestSerialPort()" class="btn-brand w-full py-5 rounded-2xl text-lg">SCAN PORTS</button>
+            <button onclick="closePortModal()" class="text-gray-600 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest">Cancel</button>
+        </div>
+    </div>
+
+    <!-- ======== FINALIZE VIEW ======== -->
+    <div id="view-finalize" class="view min-h-screen pt-40 px-8 hidden section-in">
+        <div class="max-w-4xl mx-auto space-y-12">
+            <div class="flex items-center justify-between">
+                <h2 class="text-5xl font-bold tracking-tight">Final Deployment</h2>
+                <div class="px-6 py-2 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-bold font-mono" id="connected-port-label">COM: ---</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass p-8 rounded-3xl col-span-2 space-y-8">
+                    <div class="flex items-center gap-6">
+                        <div class="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-brand text-2xl"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="16 13 18 15 16 17"/><polyline points="8 13 6 15 8 17"/></svg></div>
+                        <div>
+                            <h4 class="font-bold text-lg" id="final-bin-name">binary_file.bin</h4>
+                            <p class="text-xs text-gray-500 uppercase tracking-widest" id="final-bin-ver">Version: Unknown</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-10 bg-white/5 rounded-3xl border border-white/5 space-y-6">
+                        <div class="flex justify-between items-center font-mono text-sm">
+                            <span id="flash-status">Awaiting Input...</span>
+                            <span class="text-brand" id="flash-percent">0%</span>
+                        </div>
+                        <div class="h-3 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div id="flash-progress" class="h-full bg-brand transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <button onclick="startAction('erase')" class="w-full glass p-8 rounded-3xl text-left group hover:bg-red-500/10 hover:border-red-500/30 transition-all">
+                        <div class="text-red-500 mb-4 group-hover:scale-110 transition-transform"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+                        <h4 class="font-bold">Erase Board</h4>
+                        <p class="text-[10px] text-gray-500 mt-1 uppercase">Clear all memory</p>
+                    </button>
+                    <button onclick="startAction('flash')" class="w-full btn-brand p-10 rounded-[35px] text-center flex flex-col items-center justify-center gap-4">
+                        <div class="w-12 h-12 bg-black rounded-full flex items-center justify-center text-brand shadow-xl"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                        <span>FLASH FIRMWARE</span>
+                        <p class="text-[9px] text-black/60 font-black uppercase">Erase + Write</p>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <button onclick="navigate('firmware')" class="text-gray-600 hover:text-white transition-colors">← Start over</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SUCCESS MODAL ======== -->
+    <div id="success-modal" class="fixed inset-0 z-[300] flex items-center justify-center px-6 transition-all duration-300 invisible opacity-0">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
+        <div class="popup glass p-12 rounded-[50px] max-w-md w-full relative z-[301] text-center space-y-10">
+            <div class="w-24 h-24 bg-brand rounded-full flex items-center justify-center mx-auto text-4xl text-black shadow-2xl shadow-brand/40"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="space-y-4">
+                <h3 class="text-4xl font-extrabold tracking-tight">DEPLOYED!</h3>
+                <p class="text-gray-500 leading-relaxed">Your ESP8266 has been successfully flashed with OPX-MY-DEMON firmware. You can now disconnect your device.</p>
+            </div>
+            <button onclick="location.reload()" class="btn-brand w-full py-5 rounded-2xl">DONE</button>
+        </div>
+    </div>
+
+    <!-- Core ESP Library -->
+    <script type="module">
+        import { ESPLoader, Transport } from 'https://cdn.jsdelivr.net/npm/esptool-js@latest/+esm';
+        window.__ESPLoader = ESPLoader;
+        window.__Transport = Transport;
+    </script>
+
+    <!-- Markdown Renderer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        // --- State ---
+        let selectedPort = null;
+        let selectedBinary = null; // ArrayBuffer
+        let binaryName = "";
+        let binaryVer = "Manual Upload";
+
+        // --- Init ---
+        populateHomePage();
+
+        // --- Navigation ---
+        function navigate(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + id).classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Mouse Glow ---
+        document.addEventListener('mousemove', (e) => {
+            const glow = document.getElementById('mouse-glow');
+            glow.style.left = e.clientX + 'px';
+            glow.style.top = e.clientY + 'px';
+            document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+            document.documentElement.style.setProperty('--my', e.clientY + 'px');
+        });
+
+        // --- Step 1: Firmware Selection ---
+        async function fetchGitHubReleases() {
+            const dropdown = document.getElementById('github-dropdown');
+            try {
+                const res = await fetch('https://api.github.com/repos/OP-AMINUL-FF/OPX_my_demon/releases');
+                const data = await res.json();
+                dropdown.innerHTML = '<option value="">Select a version...</option>';
+                data.forEach(r => {
+                    const bin = r.assets.find(a => a.name.endsWith('.bin')) || r.assets[0];
+                    if (bin) {
+                        const opt = document.createElement('option');
+                        opt.value = bin.browser_download_url;
+                        opt.dataset.tag = r.tag_name;
+                        opt.dataset.name = bin.name;
+                        opt.textContent = `${r.tag_name} (${bin.name})`;
+                        dropdown.appendChild(opt);
+                    }
+                });
+            } catch(e) { dropdown.innerHTML = '<option value="">Error loading releases</option>'; }
+        }
+        fetchGitHubReleases();
+
+        async function handleManualUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            binaryName = file.name;
+            binaryVer = "Custom Build";
+            selectedBinary = await file.arrayBuffer();
+            openPortModal();
+        }
+
+        async function handleGitHubSelection() {
+            const dropdown = document.getElementById('github-dropdown');
+            const url = dropdown.value;
+            if (!url) return alert("Please select a version first!");
+            
+            binaryName = dropdown.selectedOptions[0].dataset.name;
+            binaryVer = dropdown.selectedOptions[0].dataset.tag;
+            
+            // Show loading status
+            dropdown.disabled = true;
+            dropdown.innerHTML = '<option>Downloading...</option>';
+            
+            try {
+                selectedBinary = await tryFetch(url);
+                openPortModal();
+            } catch(e) { 
+                alert("Download failed: " + e.message); 
+                fetchGitHubReleases();
+                dropdown.disabled = false;
+            }
+        }
+
+        // --- Step 2: Port Selection ---
+        function openPortModal() {
+            const modal = document.getElementById('port-modal');
+            modal.classList.remove('invisible', 'opacity-0');
+            modal.querySelector('.popup').classList.add('active');
+        }
+
+        function closePortModal() {
+            const modal = document.getElementById('port-modal');
+            modal.classList.add('invisible', 'opacity-0');
+            modal.querySelector('.popup').classList.remove('active');
+        }
+
+        async function requestSerialPort() {
+            try {
+                selectedPort = await navigator.serial.requestPort();
+                const info = selectedPort.getInfo();
+                document.getElementById('connected-port-label').innerText = `COM: VID:${info.usbVendorId || '?'}`;
+                document.getElementById('final-bin-name').innerText = binaryName;
+                document.getElementById('final-bin-ver').innerText = `Version: ${binaryVer}`;
+                closePortModal();
+                navigate('finalize');
+            } catch (e) { alert("Serial selection failed."); }
+        }
+
+        // --- Step 3: Action Execution ---
+        async function tryFetch(url) {
+            const isFile = location.protocol === 'file:';
+            const proxies = [];
+
+            if (!isFile) {
+                proxies.push('/.netlify/functions/proxy?url=' + encodeURIComponent(url));
+                proxies.push('/api/proxy?url=' + encodeURIComponent(url));
+            }
+            proxies.push(
+                'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+                'https://corsproxy.io/?' + encodeURIComponent(url),
+                'https://thingproxy.freeboard.io/fetch/' + url,
+                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+                url
+            );
+
+            let lastError = "";
+            for (const proxyUrl of proxies) {
+                try {
+                    const res = await fetch(proxyUrl);
+                    if (res.ok) {
+                        const data = await res.arrayBuffer();
+                        if (data.byteLength > 1000) return data;
+                    }
+                } catch(e) { lastError = e.message; }
+            }
+            throw new Error("CORS Proxy Failure: " + lastError);
+        }
+
+        function getESPLoader() {
+            return window.__ESPLoader;
+        }
+
+        async function startAction(type) {
+            const status = document.getElementById('flash-status');
+            const percent = document.getElementById('flash-percent');
+            const bar = document.getElementById('flash-progress');
+            
+            const ESPLoader = getESPLoader();
+            if (!ESPLoader) {
+                status.innerText = "Error: Flasher library not loaded. Check internet.";
+                return;
+            }
+
+            status.innerText = "Initializing Hardware...";
+            bar.style.width = '0%';
+            percent.innerText = '0%';
+            
+            try {
+                const loader = new ESPLoader({
+                    port: selectedPort,
+                    baudrate: 460800,
+                    romBaudrate: 115200,
+                });
+                await loader.connect();
+                
+                await loader.eraseFlash();
+                
+                if (type === 'flash') {
+                    status.innerText = "Deploying Binary...";
+                    await loader.writeFlash({
+                        address: 0,
+                        data: new Uint8Array(selectedBinary),
+                        progress: (p) => {
+                            const pc = Math.round(p * 100);
+                            percent.innerText = pc + '%';
+                            bar.style.width = pc + '%';
+                        },
+                    });
+                }
+                
+                await loader.hardReset();
+                await loader.disconnect();
+                
+                if (type === 'erase') {
+                    status.innerText = "Erase Successful!";
+                    bar.style.width = '100%';
+                    percent.innerText = '100%';
+                } else {
+                    document.getElementById('success-modal').classList.remove('invisible', 'opacity-0');
+                    document.getElementById('success-modal').querySelector('.popup').classList.add('active');
+                }
+            } catch (e) {
+                status.innerText = "Error: " + e.message;
+            }
+        }
+
+        // --- Utility ---
+        function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+        // --- Home Page: Hero Version Badge ---
+        async function fetchHeroVersion() {
+            try {
+                const res = await fetch('https://api.github.com/repos/OP-AMINUL-FF/OPX_my_demon/releases/latest');
+                const data = await res.json();
+                document.getElementById('hero-version').textContent = (data.tag_name || 'v?.?.?') + ' — LATEST';
+            } catch(e) {
+                document.getElementById('hero-version').textContent = 'UNAVAILABLE';
+            }
+        }
+
+        // --- Home Page: Releases & Changelog ---
+        async function fetchReleases() {
+            const container = document.getElementById('releases-container');
+            try {
+                const res = await fetch('https://api.github.com/repos/OP-AMINUL-FF/OPX_my_demon/releases');
+                const releases = await res.json();
+                if (!releases.length) { container.innerHTML = '<div class="glass rounded-3xl p-8 text-gray-500 text-center">No releases yet.</div>'; return; }
+                container.innerHTML = '';
+                for (const r of releases) {
+                    const bin = r.assets.find(a => a.name.endsWith('.bin'));
+                    const date = new Date(r.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                    const bodyHtml = r.body ? esc(r.body).replace(/\n/g, '<br>') : '';
+                    const card = document.createElement('div');
+                    card.className = 'glass rounded-3xl p-8 space-y-4';
+                    card.innerHTML = `
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <h3 class="text-xl font-bold">${esc(r.tag_name)}</h3>
+                                <p class="text-gray-500 text-sm">${esc(r.name || '')} ${r.name ? '—' : ''} ${date}</p>
+                            </div>
+                            ${bin ? `<a href="${esc(bin.browser_download_url)}" class="btn-brand px-5 py-3 rounded-xl text-xs font-bold shrink-0" target="_blank">DOWNLOAD</a>` : ''}
+                        </div>
+                        ${bodyHtml ? `<div class="text-gray-400 text-sm leading-relaxed border-t border-white/5 pt-4">${bodyHtml}</div>` : ''}
+                    `;
+                    container.appendChild(card);
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="glass rounded-3xl p-8 text-gray-500 text-center">Failed to load releases.</div>`;
+            }
+        }
+
+        // --- Home Page: About Me ---
+        async function fetchAboutMe() {
+            const container = document.getElementById('about-me-container');
+            try {
+                const res = await fetch('https://api.github.com/users/OP-AMINUL-FF');
+                const user = await res.json();
+                container.innerHTML = `
+                    <div class="flex items-center gap-6 mb-8">
+                        <img src="${user.avatar_url}" alt="${user.login}" class="w-16 h-16 rounded-full border-2 border-white/10">
+                        <div>
+                            <h3 class="text-2xl font-bold">${user.name || user.login}</h3>
+                            <p class="text-gray-500">@${user.login}</p>
+                        </div>
+                    </div>
+                    ${user.bio ? `<p class="text-gray-400 leading-relaxed">${esc(user.bio)}</p>` : ''}
+                    <div class="flex gap-6 mt-8 text-sm text-gray-500">
+                        <span class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> ${user.public_repos} repos</span>
+                        <span class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${user.followers} followers</span>
+                    </div>
+                `;
+            } catch(e) {
+                container.innerHTML = `<div class="text-gray-500">Failed to load profile.</div>`;
+            }
+        }
+
+        // --- Home Page: About The Tool ---
+        async function fetchToolInfo() {
+            const container = document.getElementById('tool-info-container');
+            try {
+                const res = await fetch('https://api.github.com/repos/OP-AMINUL-FF/OPX_my_demon');
+                const repo = await res.json();
+                const navDesc = document.getElementById('nav-desc');
+                if (repo.description) navDesc.textContent = repo.description;
+                container.innerHTML = `
+                    <h3 class="text-2xl font-bold mb-4">${repo.full_name}</h3>
+                    ${repo.description ? `<p class="text-gray-400 leading-relaxed mb-6">${esc(repo.description)}</p>` : ''}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white/5 rounded-2xl p-6 text-center">
+                            <div class="text-2xl font-bold">${repo.stargazers_count}</div>
+                            <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Stars</div>
+                        </div>
+                        <div class="bg-white/5 rounded-2xl p-6 text-center">
+                            <div class="text-2xl font-bold">${repo.forks_count}</div>
+                            <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Forks</div>
+                        </div>
+                        <div class="bg-white/5 rounded-2xl p-6 text-center">
+                            <div class="text-2xl font-bold">${repo.open_issues_count}</div>
+                            <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Issues</div>
+                        </div>
+                        <div class="bg-white/5 rounded-2xl p-6 text-center">
+                            <div class="text-2xl font-bold">${repo.language || '-'}</div>
+                            <div class="text-xs text-gray-500 uppercase tracking-widest mt-1">Language</div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <a href="${repo.html_url}" target="_blank" class="text-brand hover:underline text-sm font-bold">View on GitHub &rarr;</a>
+                    </div>
+                `;
+            } catch(e) {
+                container.innerHTML = `<div class="text-gray-500">Failed to load repository info.</div>`;
+            }
+        }
+
+        // --- Home Page: README ---
+        async function fetchReadme() {
+            const container = document.getElementById('readme-container');
+            try {
+                const res = await fetch('https://raw.githubusercontent.com/OP-AMINUL-FF/OPX_my_demon/master/README.md');
+                const md = await res.text();
+                const html = marked.parse(md);
+                container.innerHTML = '<div class="readme-content">' + html + '</div>';
+            } catch(e) {
+                container.innerHTML = '<div class="text-gray-500">Failed to load README.</div>';
+            }
+        }
+
+        // --- Home Page: Orchestrator ---
+        function populateHomePage() {
+            fetchHeroVersion();
+            fetchReadme();
+            fetchReleases();
+            fetchAboutMe();
+            fetchToolInfo();
+        }
+    </script>
+</body>
+</html>

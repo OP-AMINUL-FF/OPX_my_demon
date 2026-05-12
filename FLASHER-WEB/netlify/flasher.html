@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPX-MY-DEMON - Web Flasher</title>
+    <script type="module">
+        import { ESPLoader } from 'https://cdn.jsdelivr.net/npm/esptool-js@latest/+esm';
+        window.ESPLoader = ESPLoader;
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        .file-warning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 200;
+            background: #ff8f00;
+            color: #000;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .file-warning a { color: #000; text-decoration: underline; }
+
+        :root {
+            --primary: #00d4ff;
+            --secondary: #7b2ff7;
+            --bg: #0a0a1a;
+            --card: rgba(20, 20, 50, 0.8);
+            --text: #e0e0ff;
+            --glow-x: 50%;
+            --glow-y: 50%;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ---- Background Animation ---- */
+        #bg-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .bg-blur {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            background: radial-gradient(600px at var(--glow-x) var(--glow-y), rgba(0, 212, 255, 0.08), transparent 60%);
+            transition: background 0.1s;
+        }
+
+        .page {
+            display: none;
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            padding: 40px 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .page.active { display: flex; }
+
+        /* ---- Home ---- */
+        #page-home { text-align: center; }
+        .logo {
+            width: 120px; height: 120px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 24px;
+            box-shadow: 0 0 60px rgba(0, 212, 255, 0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .title { font-size: 42px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .subtitle { font-size: 18px; color: rgba(224, 224, 255, 0.7); margin-bottom: 32px; }
+        .project-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 40px;
+        }
+        .info-card {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .info-card:hover { transform: translateY(-4px); border-color: var(--primary); }
+        .info-card .icon { font-size: 28px; margin-bottom: 8px; }
+        .info-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: rgba(224,224,255,0.5); }
+        .info-card .value { font-size: 16px; font-weight: 600; margin-top: 4px; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 36px;
+            border: none;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #fff;
+            box-shadow: 0 4px 30px rgba(0, 212, 255, 0.3);
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 40px rgba(0, 212, 255, 0.5); }
+        .btn:active { transform: translateY(0); }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            box-shadow: none;
+        }
+        .btn-outline:hover { background: rgba(0, 212, 255, 0.1); box-shadow: 0 0 30px rgba(0, 212, 255, 0.2); }
+        .btn-danger { background: linear-gradient(135deg, #ff4444, #cc0000); box-shadow: 0 4px 30px rgba(255, 0, 0, 0.3); }
+        .btn-success { background: linear-gradient(135deg, #00e676, #00c853); box-shadow: 0 4px 30px rgba(0, 230, 118, 0.3); color: #000; }
+        .btn-sm { padding: 10px 20px; font-size: 14px; }
+
+        /* ---- Page Header ---- */
+        .page-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .page-header h2 { font-size: 24px; }
+        .page-header .back-btn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .page-header .back-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* ---- Binary Selection ---- */
+        .binary-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .binary-item {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(12px);
+        }
+        .binary-item:hover { border-color: var(--primary); transform: translateX(4px); }
+        .binary-item.selected { border-color: var(--primary); background: rgba(0, 212, 255, 0.1); }
+        .binary-item .name { font-weight: 600; }
+        .binary-item .meta { font-size: 13px; color: rgba(224,224,255,0.5); }
+        .binary-item .tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--primary);
+        }
+        .upload-area {
+            width: 100%;
+            border: 2px dashed rgba(255,255,255,0.15);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+            background: var(--card);
+            backdrop-filter: blur(12px);
+        }
+        .upload-area:hover { border-color: var(--primary); background: rgba(0, 212, 255, 0.05); }
+        .upload-area .icon { font-size: 40px; margin-bottom: 12px; }
+        .upload-area p { color: rgba(224,224,255,0.6); }
+        .upload-area input { display: none; }
+
+        .section-divider {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 16px 0;
+            color: rgba(224,224,255,0.3);
+            font-size: 13px;
+        }
+        .section-divider hr { flex: 1; border: none; border-top: 1px solid rgba(255,255,255,0.06); }
+
+        /* ---- COM Port ---- */
+        .port-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .port-item {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(12px);
+        }
+        .port-item:hover { border-color: var(--primary); transform: translateX(4px); }
+        .port-item.selected { border-color: var(--primary); background: rgba(0, 212, 255, 0.1); }
+        .port-item .name { font-weight: 600; font-size: 18px; }
+        .port-item .desc { font-size: 13px; color: rgba(224,224,255,0.5); }
+        .port-item .status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #00e676;
+        }
+        .connect-info {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(12px);
+            display: none;
+        }
+        .connect-info.show { display: block; }
+        .connect-info .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+        .connect-info .row .val { color: var(--primary); font-weight: 600; }
+
+        /* ---- Flash Page ---- */
+        .flash-summary {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 32px;
+            backdrop-filter: blur(12px);
+        }
+        .flash-summary .row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
+        .flash-summary .row .val { color: var(--primary); font-weight: 600; }
+        .flash-actions {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            margin-bottom: 24px;
+        }
+        .flash-actions .btn { flex: 1; justify-content: center; }
+
+        /* ---- Progress ---- */
+        .progress-wrap {
+            width: 100%;
+            display: none;
+            margin-bottom: 24px;
+        }
+        .progress-wrap.show { display: block; }
+        .progress-status { font-size: 14px; margin-bottom: 8px; color: rgba(224,224,255,0.7); }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        .progress-percent { font-size: 12px; text-align: right; margin-top: 4px; color: rgba(224,224,255,0.5); }
+        .log-box {
+            width: 100%;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 24px;
+            display: none;
+        }
+        .log-box.show { display: block; }
+        .log-box .line { padding: 2px 0; color: rgba(224,224,255,0.7); }
+        .log-box .line.ok { color: #00e676; }
+        .log-box .line.err { color: #ff4444; }
+        .log-box .line.info { color: var(--primary); }
+
+        /* ---- Modal ---- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 440px;
+            width: 90%;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal .icon { font-size: 56px; margin-bottom: 16px; }
+        .modal h3 { font-size: 22px; margin-bottom: 8px; }
+        .modal p { color: rgba(224,224,255,0.7); margin-bottom: 24px; font-size: 14px; }
+
+        /* ---- Loading Spinner ---- */
+        .spinner {
+            width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: rgba(224,224,255,0.3);
+            text-align: center;
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            width: 4px; height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.3;
+            animation: particleFloat linear infinite;
+            z-index: 0;
+        }
+        @keyframes particleFloat {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        @media (max-width: 600px) {
+            .title { font-size: 28px; }
+            .flash-actions { flex-direction: column; }
+            .project-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="file-warning" id="file-warning">
+    &#9888; Running from <code>file://</code> — one-click download wont work. 
+    Use <code>npx serve</code> or upload manually.
+</div>
+
+<canvas id="bg-canvas"></canvas>
+<div class="bg-blur" id="bg-blur"></div>
+
+<!-- ======== HOME ======== -->
+<div class="page active" id="page-home">
+    <div class="logo">OPX</div>
+    <h1 class="title">OPX-MY-DEMON</h1>
+    <p class="subtitle">ESP8266 Penetration Testing Firmware — Web Flasher Tool</p>
+    
+    <div class="project-info">
+        <div class="info-card">
+            <div class="icon">&#9733;</div>
+            <div class="label">Version</div>
+            <div class="value">v1.0.2</div>
+        </div>
+        <div class="info-card">
+            <div class="icon">&#9881;</div>
+            <div class="label">Platform</div>
+            <div class="value">ESP8266</div>
+        </div>
+        <div class="info-card">
+            <div class="icon">&#128197;</div>
+            <div class="label">Author</div>
+            <div class="value">OP-AMINUL-FF</div>
+        </div>
+        <div class="info-card">
+            <div class="icon">&#128279;</div>
+            <div class="label">License</div>
+            <div class="value">MIT</div>
+        </div>
+    </div>
+
+    <button class="btn" onclick="navigate('binary')">
+        Install My Program &#8594;
+    </button>
+    <div class="footer">Requires Chrome / Edge (Web Serial API)</div>
+</div>
+
+<!-- ======== BINARY SELECT ======== -->
+<div class="page" id="page-binary">
+    <div class="page-header">
+        <button class="back-btn" onclick="navigate('home')">&#8592; Back</button>
+        <h2>Select Firmware</h2>
+        <div></div>
+    </div>
+
+    <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+        <div class="icon">&#128194;</div>
+        <p><strong>Click to upload</strong> your own .bin file</p>
+        <p style="font-size:12px;margin-top:4px;">or paste a download URL below</p>
+        <input type="file" id="file-input" accept=".bin">
+    </div>
+
+    <div style="width:100%;margin-bottom:16px;">
+        <input type="text" id="url-input" placeholder="Paste direct .bin URL (e.g. https://example.com/firmware.bin)" style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:var(--card);color:var(--text);font-size:14px;backdrop-filter:blur(12px);outline:none;">
+        <button class="btn btn-sm" id="url-download-btn" style="margin-top:8px;width:100%;justify-content:center;" onclick="downloadFromUrl()">&#11015; Download from URL</button>
+    </div>
+
+    <div class="section-divider"><hr> OR <hr></div>
+
+    <h3 style="width:100%;margin-bottom:16px;font-size:16px;color:rgba(224,224,255,0.6);">GitHub Releases</h3>
+    <div class="binary-list" id="release-list">
+        <div style="text-align:center;padding:40px;"><span class="spinner"></span> Loading releases...</div>
+    </div>
+
+    <button class="btn" id="binary-next-btn" style="width:100%;justify-content:center;opacity:0.4;pointer-events:none;" onclick="navigate('port')">
+        Next &#8594;
+    </button>
+</div>
+
+<!-- ======== PORT SELECT ======== -->
+<div class="page" id="page-port">
+    <div class="page-header">
+        <button class="back-btn" onclick="navigate('binary')">&#8592; Back</button>
+        <h2>Select COM Port</h2>
+        <div></div>
+    </div>
+    <p style="width:100%;margin-bottom:24px;color:rgba(224,224,255,0.6);font-size:14px;">
+        Connect your ESP8266 board via USB and select the port below.
+    </p>
+    <div class="port-list" id="port-list">
+        <div style="text-align:center;padding:40px;">
+            <button class="btn btn-sm" onclick="requestSerialPort()">&#128268; Scan for Ports</button>
+            <p style="margin-top:12px;font-size:13px;color:rgba(224,224,255,0.4);">Click to open browser's serial port selector</p>
+        </div>
+    </div>
+    <div class="connect-info" id="connect-info">
+        <div class="row"><span>Port</span><span class="val" id="ci-port">-</span></div>
+        <div class="row"><span>USB Vendor</span><span class="val" id="ci-vendor">-</span></div>
+        <div class="row"><span>USB Product</span><span class="val" id="ci-product">-</span></div>
+    </div>
+    <button class="btn" id="port-next-btn" style="width:100%;justify-content:center;opacity:0.4;pointer-events:none;" onclick="navigate('flash')">
+        Connect &amp; Continue &#8594;
+    </button>
+</div>
+
+<!-- ======== FLASH ======== -->
+<div class="page" id="page-flash">
+    <div class="page-header">
+        <button class="back-btn" onclick="navigate('port')">&#8592; Back</button>
+        <h2>Flash Firmware</h2>
+        <div></div>
+    </div>
+    <div class="flash-summary">
+        <div class="row"><span>COM Port</span><span class="val" id="fs-port">-</span></div>
+        <div class="row"><span>Binary</span><span class="val" id="fs-binary">-</span></div>
+        <div class="row"><span>Size</span><span class="val" id="fs-size">-</span></div>
+        <div class="row"><span>Flash Address</span><span class="val">0x0</span></div>
+        <div class="row"><span>Baud Rate</span><span class="val">115200</span></div>
+    </div>
+    <div class="flash-actions">
+        <button class="btn btn-danger" id="btn-erase" onclick="eraseFlash()">Erase</button>
+        <button class="btn btn-success" id="btn-flash" onclick="startFlash()">Flash</button>
+    </div>
+    <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-status" id="progress-status">Initializing...</div>
+        <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
+        <div class="progress-percent" id="progress-pct">0%</div>
+    </div>
+    <div class="log-box" id="log-box"></div>
+</div>
+
+<!-- ======== MODAL ======== -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+        <div class="icon" id="modal-icon">&#9989;</div>
+        <h3 id="modal-title">Success!</h3>
+        <p id="modal-desc">Firmware flashed successfully.</p>
+        <button class="btn" id="modal-btn" onclick="closeModal()">OK</button>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+    binary: null,       // { name, data (ArrayBuffer), size }
+    port: null,         // SerialPort object
+    portInfo: null,     // { usbVendorId, usbProductId }
+    releases: [],       // from GitHub API
+};
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function navigate(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+
+    if (page === 'binary') loadReleases();
+    if (page === 'port') updatePortUI();
+    if (page === 'flash') updateFlashSummary();
+    window.scrollTo(0, 0);
+}
+
+// ============================================================
+// BACKGROUND: Particles + Mouse Glow
+// ============================================================
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let w, h;
+
+function resizeCanvas() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+}
+resizeCanvas();
+
+let stars = [];
+
+function initStars() {
+    stars = [];
+    for (let i = 0; i < 120; i++) {
+        stars.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            r: Math.random() * 1.5 + 0.3,
+            a: Math.random() * 0.6 + 0.1,
+            s: Math.random() * 0.3 + 0.05,
+        });
+    }
+}
+
+function drawStars() {
+    ctx.clearRect(0, 0, w, h);
+    for (const s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200, 220, 255, ${s.a})`;
+        ctx.fill();
+        s.y -= s.s;
+        if (s.y < -10) { s.y = h + 10; s.x = Math.random() * w; }
+    }
+    requestAnimationFrame(drawStars);
+}
+initStars();
+drawStars();
+
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    initStars();
+});
+
+document.addEventListener('mousemove', (e) => {
+    document.getElementById('bg-blur').style.setProperty('--glow-x', e.clientX + 'px');
+    document.getElementById('bg-blur').style.setProperty('--glow-y', e.clientY + 'px');
+});
+
+// ============================================================
+// GITHUB RELEASES
+// ============================================================
+async function loadReleases() {
+    const container = document.getElementById('release-list');
+    try {
+        const res = await fetch('https://api.github.com/repos/OP-AMINUL-FF/OPX_my_demon/releases');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const releases = await res.json();
+        state.releases = releases;
+        if (releases.length === 0) {
+            container.innerHTML = '<p style="text-align:center;padding:40px;color:rgba(224,224,255,0.4);">No releases found.</p>';
+            return;
+        }
+        container.innerHTML = releases.map(r => {
+            const assets = r.assets || [];
+            const binAsset = assets.find(a => a.name.endsWith('.bin'));
+            if (!binAsset) return '';
+            const size = (binAsset.size / 1024).toFixed(0);
+            return `
+                <div class="binary-item" data-url="${binAsset.browser_download_url}" data-name="${binAsset.name}" data-size="${binAsset.size}" onclick="selectRelease(this)">
+                    <div>
+                        <div class="name">${binAsset.name}</div>
+                        <div class="meta">${r.tag_name} &middot; ${size} KB &middot; ${new Date(r.published_at).toLocaleDateString()}</div>
+                    </div>
+                    <span class="tag">${r.tag_name}</span>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        const isRateLimit = e.message.includes('403') || e.message.includes('429');
+        const hint = isRateLimit
+            ? 'GitHub API rate limit reached (60/hr).<br>Try again later or <strong>upload a .bin file</strong> above.'
+            : 'Check your internet connection or try again.';
+        container.innerHTML = '<p style="text-align:center;padding:40px;color:#ff4444;">Failed to load releases.<br><small>' + e.message + '</small></p><p style="text-align:center;font-size:13px;color:rgba(224,224,255,0.5);margin-top:8px;">' + hint + '</p>';
+    }
+}
+
+function buildProxyList(url) {
+    const list = [];
+    if (location.protocol !== 'file:') {
+        list.push('/api/proxy?url=' + encodeURIComponent(url));
+    }
+    list.push(url);
+    list.push('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+    list.push('https://corsproxy.io/?' + encodeURIComponent(url));
+    list.push('https://proxy.cors.sh/' + encodeURIComponent(url));
+    return list;
+}
+
+async function tryFetch(url) {
+    const res = await fetch(url, { redirect: 'follow', headers: { 'Accept': 'application/octet-stream' } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res;
+}
+
+async function selectRelease(el) {
+    document.querySelectorAll('.binary-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+
+    const url = el.dataset.url;
+    const name = el.dataset.name;
+    const size = parseInt(el.dataset.size);
+
+    const area = document.getElementById('upload-area');
+    area.innerHTML = '<div class="spinner" style="margin:0 auto 8px;"></div><p>Downloading ' + name + '...</p>';
+
+    let lastErr;
+    for (const proxyUrl of buildProxyList(url)) {
+        try {
+            const res = await tryFetch(proxyUrl);
+            const blob = await res.blob();
+            state.binary = { name, data: await blob.arrayBuffer(), size };
+            document.getElementById('binary-next-btn').style.opacity = '1';
+            document.getElementById('binary-next-btn').style.pointerEvents = 'auto';
+            area.innerHTML = '<div class="icon">&#9989;</div><p><strong>' + name + '</strong> ready</p><p style="font-size:12px;margin-top:4px;color:var(--primary);">' + (blob.size / 1024).toFixed(0) + ' KB loaded</p>';
+            return;
+        } catch (e) {
+            lastErr = e;
+        }
+    }
+
+    const isFile = location.protocol === 'file:';
+    area.innerHTML = `
+        <div style="text-align:center;padding:12px;">
+            <div class="icon" style="font-size:28px;">&#9888;&#65039;</div>
+            <p style="color:#ff4444;font-weight:600;">GitHub blocks browser downloads (CORS)</p>
+            <p style="font-size:12px;margin:8px 0;color:rgba(224,224,255,0.5);">${isFile ? 'Use a server: ' : ''}<code style="background:rgba(0,0,0,0.4);padding:2px 6px;border-radius:4px;">npx serve</code></p>
+            <p style="font-size:13px;margin-bottom:10px;">Or select the file manually:</p>
+            <button class="btn btn-sm" onclick="document.getElementById('file-input').click()">&#128194; Choose .bin File</button>
+        </div>
+    `;
+}
+
+document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file || !file.name.endsWith('.bin')) {
+        showModal('Invalid File', 'Please select a .bin file.', '&#10060;');
+        return;
+    }
+    document.querySelectorAll('.binary-item').forEach(i => i.classList.remove('selected'));
+    const uploadArea = document.getElementById('upload-area');
+    uploadArea.innerHTML = '<div class="spinner" style="margin:0 auto 8px;"></div><p>Reading ' + file.name + '...</p>';
+    const reader = new FileReader();
+    reader.onload = () => {
+        state.binary = { name: file.name, data: reader.result, size: file.size };
+        document.getElementById('binary-next-btn').style.opacity = '1';
+        document.getElementById('binary-next-btn').style.pointerEvents = 'auto';
+        uploadArea.innerHTML = '<div class="icon">&#9989;</div><p><strong>' + file.name + '</strong> selected</p><p style="font-size:12px;margin-top:4px;color:var(--primary);">' + (file.size / 1024).toFixed(0) + ' KB</p>';
+    };
+    reader.onerror = () => {
+        showModal('Error', 'Failed to read file.', '&#10060;');
+        uploadArea.innerHTML = '<div class="icon">&#128194;</div><p><strong>Click to upload</strong> your own .bin file</p><p style="font-size:12px;margin-top:4px;">or select from releases below</p>';
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+// ============================================================
+// URL DOWNLOAD
+// ============================================================
+async function downloadFromUrl() {
+    const input = document.getElementById('url-input');
+    const url = input.value.trim();
+    if (!url) { showModal('No URL', 'Please paste a URL first.', '&#10060;'); return; }
+
+    const name = url.split('/').pop() || 'firmware.bin';
+    const area = document.getElementById('upload-area');
+    area.innerHTML = '<div class="spinner" style="margin:0 auto 8px;"></div><p>Downloading from URL...</p>';
+
+    for (const proxyUrl of buildProxyList(url)) {
+        try {
+            const res = await tryFetch(proxyUrl);
+            const blob = await res.blob();
+            state.binary = { name, data: await blob.arrayBuffer(), size: blob.size };
+            document.getElementById('binary-next-btn').style.opacity = '1';
+            document.getElementById('binary-next-btn').style.pointerEvents = 'auto';
+            document.querySelectorAll('.binary-item').forEach(i => i.classList.remove('selected'));
+            area.innerHTML = '<div class="icon">&#9989;</div><p><strong>' + name + '</strong> ready</p><p style="font-size:12px;margin-top:4px;color:var(--primary);">' + (blob.size / 1024).toFixed(0) + ' KB loaded</p>';
+            input.value = '';
+            return;
+        } catch (e) {
+            // try next proxy
+        }
+    }
+
+    area.innerHTML = `
+        <div style="text-align:center;">
+            <p style="color:#ff4444;font-weight:600;">Download failed</p>
+            <p style="font-size:13px;margin:8px 0;color:rgba(224,224,255,0.6);">Try uploading the .bin file manually.</p>
+            <button class="btn btn-sm" style="margin-top:8px;" onclick="document.getElementById('file-input').click()">&#128194; Choose .bin File</button>
+        </div>
+    `;
+    input.value = '';
+}
+
+// ============================================================
+// SERIAL PORT
+// ============================================================
+async function requestSerialPort() {
+    try {
+        if (!navigator.serial) {
+            showModal('Not Supported', 'Web Serial API is not available. Please use Chrome or Edge.', '&#10060;');
+            return;
+        }
+        const port = await navigator.serial.requestPort();
+        state.port = port;
+        const info = port.getInfo();
+        state.portInfo = info;
+
+        document.getElementById('ci-port').textContent = info.usbVendorId ? `USB VID:PID=${info.usbVendorId.toString(16)}:${info.usbProductId.toString(16)}` : 'Unknown';
+        document.getElementById('ci-vendor').textContent = info.usbVendorId ? '0x' + info.usbVendorId.toString(16) : '-';
+        document.getElementById('ci-product').textContent = info.usbProductId ? '0x' + info.usbProductId.toString(16) : '-';
+        document.getElementById('connect-info').classList.add('show');
+
+        document.getElementById('port-next-btn').style.opacity = '1';
+        document.getElementById('port-next-btn').style.pointerEvents = 'auto';
+    } catch (e) {
+        if (e.name !== 'NotFoundError') {
+            showModal('Error', e.message, '&#10060;');
+        }
+    }
+}
+
+function updatePortUI() {
+    if (state.port) {
+        const info = state.portInfo;
+        document.getElementById('ci-port').textContent = info.usbVendorId ? `USB VID:PID=${info.usbVendorId.toString(16)}:${info.usbProductId.toString(16)}` : 'Unknown';
+        document.getElementById('connect-info').classList.add('show');
+        document.getElementById('port-next-btn').style.opacity = '1';
+        document.getElementById('port-next-btn').style.pointerEvents = 'auto';
+    }
+}
+
+// ============================================================
+// FLASH SUMMARY
+// ============================================================
+function updateFlashSummary() {
+    document.getElementById('fs-port').textContent = state.portInfo ? `USB VID:PID=${state.portInfo.usbVendorId.toString(16)}:${state.portInfo.usbProductId.toString(16)}` : 'Connected';
+    if (state.binary) {
+        document.getElementById('fs-binary').textContent = state.binary.name;
+        document.getElementById('fs-size').textContent = (state.binary.size / 1024).toFixed(0) + ' KB';
+    }
+}
+
+// ============================================================
+// LOG
+// ============================================================
+function log(msg, type = '') {
+    const box = document.getElementById('log-box');
+    box.classList.add('show');
+    const div = document.createElement('div');
+    div.className = 'line' + (type ? ' ' + type : '');
+    div.textContent = msg;
+    box.appendChild(div);
+    while (box.children.length > 200) box.removeChild(box.firstChild);
+    box.scrollTop = box.scrollHeight;
+}
+
+function clearLog() {
+    const box = document.getElementById('log-box');
+    box.innerHTML = '';
+    box.classList.remove('show');
+}
+
+function setProgress(pct, status) {
+    document.getElementById('progress-wrap').classList.add('show');
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-pct').textContent = pct + '%';
+    if (status) document.getElementById('progress-status').textContent = status;
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function showModal(title, desc, icon = '&#9989;') {
+    document.getElementById('modal-icon').innerHTML = icon;
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-desc').textContent = desc;
+    document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ============================================================
+// ERASE
+// ============================================================
+async function eraseFlash() {
+    if (!state.port) { showModal('Error', 'No port selected.', '&#10060;'); return; }
+    if (!window.ESPLoader) { showModal('Error', 'esptool-js failed to load. Check internet.', '&#10060;'); return; }
+
+    document.getElementById('btn-erase').disabled = true;
+    document.getElementById('btn-flash').disabled = true;
+    clearLog();
+
+    try {
+        setProgress(10, 'Connecting to ESP8266...');
+        log('Connecting...', 'info');
+
+        const loader = new ESPLoader({
+            port: state.port,
+            baudrate: 115200,
+            romBaudrate: 115200,
+        });
+        await loader.connect();
+        log('Connected. Chip: ' + (await loader.getChipInfo()).description, 'ok');
+        setProgress(30, 'Connected. Erasing flash...');
+
+        await loader.eraseFlash();
+        log('Flash erase complete.', 'ok');
+        setProgress(100, 'Erase complete.');
+
+        showModal('Success', 'Board erased successfully.', '&#9989;');
+        await loader.disconnect();
+    } catch (e) {
+        log('Error: ' + e.message, 'err');
+        showModal('Error', e.message, '&#10060;');
+    } finally {
+        document.getElementById('btn-erase').disabled = false;
+        document.getElementById('btn-flash').disabled = false;
+    }
+}
+
+// ============================================================
+// FLASH
+// ============================================================
+async function startFlash() {
+    if (!state.port) { showModal('Error', 'No port selected.', '&#10060;'); return; }
+    if (!state.binary) { showModal('Error', 'No binary selected.', '&#10060;'); return; }
+    if (!window.ESPLoader) { showModal('Error', 'esptool-js not loaded.', '&#10060;'); return; }
+
+    document.getElementById('btn-erase').disabled = true;
+    document.getElementById('btn-flash').disabled = true;
+    clearLog();
+
+    try {
+        setProgress(5, 'Connecting to ESP8266...');
+        log('Connecting to ESP8266...', 'info');
+
+        const loader = new ESPLoader({
+            port: state.port,
+            baudrate: 115200,
+            romBaudrate: 115200,
+        });
+        await loader.connect();
+        const chip = await loader.getChipInfo();
+        log('Detected: ' + chip.description, 'ok');
+        setProgress(15, 'Chip detected. Erasing...');
+
+        await loader.eraseFlash();
+        log('Flash erased.', 'ok');
+        setProgress(30, 'Erase done. Writing firmware...');
+
+        await loader.writeFlash({
+            address: 0,
+            data: new Uint8Array(state.binary.data),
+            progress: (p) => {
+                const pct = Math.round(30 + p * 60);
+                setProgress(pct, 'Writing firmware... ' + Math.round(p * 100) + '%');
+            },
+        });
+        log('Firmware written successfully.', 'ok');
+        setProgress(90, 'Verifying...');
+
+        await loader.hardReset();
+        log('Hard reset complete.', 'ok');
+        setProgress(100, 'Flash complete!');
+        await loader.disconnect();
+
+        setTimeout(() => {
+            showModal('Flash Complete!', 'Firmware ' + state.binary.name + ' flashed successfully.', '&#9989;');
+        }, 500);
+    } catch (e) {
+        log('Error: ' + e.message, 'err');
+        showModal('Flash Failed', e.message, '&#10060;');
+    } finally {
+        document.getElementById('btn-erase').disabled = false;
+        document.getElementById('btn-flash').disabled = false;
+    }
+}
+
+// ============================================================
+// HANDLE KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+});
+
+if (location.protocol === 'file:') {
+    document.getElementById('file-warning').style.display = 'block';
+    document.body.style.paddingTop = '36px';
+}
+
+console.log('OPX-MY-DEMON Web Flasher v1.0.2');
+console.log('GitHub: https://github.com/OP-AMINUL-FF/OPX_my_demon');
+</script>
+
+</body>
+</html>

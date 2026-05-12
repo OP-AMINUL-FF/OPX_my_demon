@@ -18,7 +18,7 @@ $ProjectRoot = Resolve-Path "$PSScriptRoot"
 $CoreDir = "$env:LOCALAPPDATA\Arduino15\packages\esp8266\hardware\esp8266\3.1.2\cores\esp8266"
 $PatchesDir = "$ProjectRoot\patches"
 $BackupDir = "$PatchesDir\backup"
-$FirmwareDir = "$ProjectRoot\..\firmware"
+$FirmwareDir = "$ProjectRoot"
 $FQBN = "esp8266:esp8266:nodemcuv2:eesz=4M3M,xtal=160,mmu=4816,dbg=Disabled,lvl=None____,ip=lm2f,vt=flash,exception=disabled,stacksmash=disabled,ssl=all,non32xfer=fast"
 $InoFile = "$ProjectRoot\OPX-MY-DEMON_ESP8266.ino"
 $BinName = "OPX-MY-DEMON_ESP8266_v1.0.2.bin"
@@ -189,7 +189,7 @@ function Invoke-Clean {
 function Invoke-Compile {
     Write-Step "Compiling firmware..."
     $escFqbn = $FQBN -replace '"', '\"'
-    $r = Run-CmdCapture "arduino-cli compile --fqbn `"$escFqbn`" `"$InoFile`""
+    $r = Run-CmdCapture "arduino-cli compile --fqbn `"$escFqbn`" --output-dir `"$ProjectRoot`" `"$InoFile`""
 
     if ($r.ExitCode -ne 0) {
         Write-Host ""

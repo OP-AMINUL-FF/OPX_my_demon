@@ -1,50 +1,50 @@
-# OPX-MY-DEMON v1.0.2
+# OPX-MY-DEMON
 
-A full-featured Wi-Fi penetration testing and social engineering firmware for **ESP8266** (NodeMCU). Built on top of heavily-modified M1z23R's ESP8266-EvilTwin v2 with Spacehuhn's Deauther framework.
+> **Version 1.0.2** — A full-featured Wi-Fi penetration testing and social engineering firmware for ESP8266 (NodeMCU), built on heavily-modified M1z23R's ESP8266-EvilTwin v2 with Spacehuhn's Deauther framework.
 
-> **Developer:** OP AMINUL FF
+<p align="center">
+  <a href="https://opaminulff.netlify.app/" target="_blank">
+    <img src="https://raw.githubusercontent.com/OP-AMINUL-FF/OPX_my_demon/master/channels4_profile.jpg" alt="OPX-MY-DEMON" width="120" style="border-radius:16px">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://opaminulff.netlify.app/"><strong>Visit Official Website &rarr;</strong></a>
+</p>
 
 ---
 
-## What's New in v1.0.2
+## Table of Contents
 
-### Aggressive RAM Optimization
-- **PROGMEM migration** — All language strings, action tables, HTML templates, and web UI strings moved to flash (PROGMEM/F() macros)
-- **Buffer shrink** — Network/station/probe/log buffers reduced to fit within 80KB DRAM limit
-- **Removed `customHTML` cache** — Custom phishing pages read from LittleFS on demand instead of held in RAM
-- **EAPOL raw data clipped** — From 256 → 64 bytes per handshake entry
-- **Dead code removal** — Unused variables and functions stripped (`computeSHA256`, `verifyOTASignature`, `sanitizeHexString`, `lastChannelHop`, `phishingSessionId`, `wifiClientStatus`, `extenderTargetSSID/pass`)
+- [Overview](#overview)
+- [Features](#features)
+- [Hardware Requirements](#hardware-requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Web Flasher](#web-flasher)
+- [Project Structure](#project-structure)
+- [Technical Notes](#technical-notes)
+- [Changelog](#changelog)
+- [Credits](#credits)
+- [License](#license)
+- [Disclaimer](#disclaimer)
 
-### IRAM Optimization
-- **MMU=4816** — 16KB ICACHE + 48KB IRAM (vs default 32/32), yields **66% IRAM usage** (was **91%**)
-- **Core patches** — 11 `IRAM_ATTR` removed from `waveform_pwm.cpp`, 1 from `gdb_hooks.cpp` (`demon_dev.bat` auto-applies)
+---
 
-### Bug Fixes
-- **Atomic file writes** — `/state.json` writes use `.tmp` + rename pattern to prevent corruption
-- **Upload handler** — Fixed `w` vs `a` mode for file uploads; sanitized path handling
-- **State.json upload** — Uses atomic `.tmp` pattern + explicit rename
-- **Action string table** — Moved from `String*` array (RAM) to `PROGMEM` compact table (flash)
-- **hide_ap** — Properly uses `WiFi.softAP(ssid, pass, ch, hidden)` API
-- **BSS Transition (802.11v)** — Uses broadcast DA instead of per-client, correct action frame body
-- **EAPOL parsing** — Fixed QoS bitmask and +HTC handling
-- **Log buffer** — Reduced from `LOG_BUFFER_MAX=8192` to `2048`
-- **`delay(100)` before `ESP.restart()`** — Ensures HTTP response is sent before reboot
-- **`WiFi.mode(WIFI_AP_STA)`** — Moved before `loadState()` to ensure proper radio init
+## Overview
 
-### v1.0.2 Changelog
-- `config.h`: v1.0.1→v1.0.2, buffer limits reduced, EAPOL_MAX added
-- `OPX-MY-DEMON_ESP8266.ino`: PROGMEM tables, removed `customHTML` RAM cache, atomic saves, `wifiClientStatus` removed, upload path sanitized, `hide_ap` API fix, `delay(100)` before reboot
-- `webui.h`: All HTML template strings via `F()` macro, navBar titles via PROGMEM
-- `attacks.h`: Dead code removed, BSS Transition broadcast fix, EAPOL parsing fix, DHCP fingerprint buffers shrunk, `phishingSessionId` removed
-- `language.h`: `langTable` moved to PROGMEM, `tr()` reads via `pgm_read_ptr`
-- `secure_ota.h`: Unused functions removed
-- New: `demon_dev.bat`, `patches/` (core IRAM_ATTR patches), `AGENTS.md`
+OPX-MY-DEMON is an advanced ESP8266 firmware designed for wireless security auditing and social engineering demonstrations. It packs deauthentication attacks, rogue access points, phishing captures, beacon flooding, and dozens more offensive and defensive tools into a single device that fits in your pocket.
+
+**Developer:** OP AMINUL FF  
+**Website:** [https://opaminulff.netlify.app/](https://opaminulff.netlify.app/)  
+**Repository:** [github.com/OP-AMINUL-FF/OPX_my_demon](https://github.com/OP-AMINUL-FF/OPX_my_demon)
 
 ---
 
 ## Features
 
 ### Core Attacks
+
 | Attack | Description |
 |--------|-------------|
 | **Deauth** | 802.11 deauthentication with PMF bypass (CSA + BSS Transition) |
@@ -57,41 +57,44 @@ A full-featured Wi-Fi penetration testing and social engineering firmware for **
 | **Precise Deauth** | Targeted client deauthentication |
 | **True Deauth** | Aggressive deauth mode |
 
-### Security & Hardening (2026 Upgrades)
-- **Constant-Time PIN Verification** — Timing-attack resistant PIN comparison
-- **Reactive Phishing** — Auto-verifies captured passwords via WiFi.begin(), shows success/retry pages
-- **XXTEA Encryption** — All stored passwords and PINs encrypted with device-unique key
-- **Input Sanitization** — XSS-resistant HTML entity encoding
-- **Atomic File Writes** — .tmp + rename pattern prevents filesystem corruption on power loss
-- **Rate-Limited Capture** — Anti-bruteforce credential capture (800ms interval, 50/min max)
-- **PIN Lockout** — Auto-lockout after 5 failed attempts (30s)
-- **Adaptive TX Power** — Signal strength matching for stealth
-- **Heap Monitoring** — Dynamic resource limits prevent crashes
-- **Wear-Leveling State Saves** — Critical saves every 5s, non-critical every 60s
+### Security & Hardening
+
+- Constant-time PIN verification (timing-attack resistant)
+- Reactive phishing with auto-credential verification via WiFi.begin()
+- XXTEA encryption for all stored passwords and PINs
+- XSS-resistant HTML entity encoding
+- Atomic file writes with .tmp + rename pattern
+- Rate-limited credential capture (800ms interval, 50/min max)
+- PIN lockout after 5 failed attempts (30s)
+- Adaptive TX power for stealth operation
+- Heap monitoring with dynamic resource limits
+- Wear-leveling state saves
 
 ### Phishing Templates (9 Built-in)
+
 | Template | Type |
 |----------|------|
 | Facebook | Social media login |
-| Google | Google sign-in (email + password) |
-| Instagram | Instagram login (username + password) |
+| Google | Google sign-in |
+| Instagram | Instagram login |
 | Tenda | Router login |
-| Generic ISP | "Connection lost, re-enter WiFi password" |
-| Router Update | Firmware upgrade form with terms |
-| Landing | "500 Internal Server Error" |
-| Custom HTML | Upload your own HTML pages |
+| Generic ISP | WiFi password re-entry |
+| Router Update | Firmware upgrade form |
+| Landing | 500 Internal Server Error |
+| Custom HTML | Upload your own pages |
 
 ### Additional Features
-- **Web UI** — Full terminal-style dark web interface (4 themes: CYBER, TERMINAL, RED, VAPORWAVE)
-- **Internet Sharing (NAT)** — Forward internet from STA to AP interface
-- **Extender Mode** — WiFi repeater functionality
-- **Handshake Capture** — WPA/WPA2 EAPOL handshake logging to PCAP
-- **DHCP Fingerprinting** — Client OS detection via DHCP option 55
-- **DoH Mitigation** — DNS-over-HTTPS canary domain blocking
-- **WebSocket Real-time Status** — Live attack statistics
-- **Secure OTA** — HMAC-SHA256 firmware signature verification
-- **Multi-language** — English & Indonesian (custom language support)
-- **Persistent State** — All settings saved to LittleFS `/state.json`
+
+- Dark web UI with 4 themes (CYBER, TERMINAL, RED, VAPORWAVE)
+- Internet sharing via NAT
+- WiFi extender / repeater mode
+- WPA/WPA2 EAPOL handshake capture to PCAP
+- DHCP fingerprinting for OS detection
+- DoH mitigation with canary domain blocking
+- WebSocket real-time attack statistics
+- Secure OTA with HMAC-SHA256 verification
+- Multi-language support (English & Indonesian)
+- Persistent state saved to LittleFS
 
 ---
 
@@ -101,58 +104,26 @@ A full-featured Wi-Fi penetration testing and social engineering firmware for **
 |-----------|--------------|
 | **Board** | NodeMCU 1.0 (ESP-12E Module) or any ESP8266 with 4MB flash |
 | **Flash Size** | 4MB (32Mbit) required for LittleFS |
-| **Board Support** | ESP8266 Arduino Core 2.7+ |
+| **Core** | ESP8266 Arduino Core 2.7+ |
 
 ---
 
-## Installation Guide
+## Installation
 
-### Method 1: Arduino IDE
+### Method 1: One-Click Build (Recommended)
 
-#### Step 1: Install ESP8266 Board Support
-1. Open **Arduino IDE** → File → Preferences
-2. Add to **Additional Boards Manager URLs**:
-   ```
-   https://arduino.esp8266.com/stable/package_esp8266com_index.json
-   ```
-3. Tools → Board → Boards Manager → Search "ESP8266" → Install **esp8266 2.7.0+**
-
-#### Step 2: Install Required Libraries
-Install via Library Manager (Sketch → Include Library → Manage Libraries):
-- **ESPAsyncWebServer** (by me-no-dev)
-- **ESPAsyncTCP** (by me-no-dev)
-- **DNSServer** (included with ESP8266 core)
-- **LittleFS** (included with ESP8266 core)
-- **ArduinoJson** (by Benoit Blanchon, v6.x)
-
-#### Step 3: Compile & Upload
-1. Open `OPX-MY-DEMON_ESP8266/OPX-MY-DEMON_ESP8266.ino` in Arduino IDE
-2. Select Board: **Tools → Board → ESP8266 Boards → NodeMCU 1.0 (ESP-12E Module)**
-3. Flash Size: **Tools → Flash Size → 4MB (FS:3MB OTA:~0.5MB)** (or `4M3M` for max storage)
-4. CPU Frequency: **160 MHz**
-5. Upload Speed: **115200**
-6. Click **→** (Upload) button
-
-#### Step 4: Upload LittleFS Data (for state storage)
-1. Install **ESP8266 LittleFS Data Upload** plugin (or use `arduino-cli`)
-2. Tools → ESP8266 LittleFS Data Upload → Upload
-
-### Method 2: One-Click Build (Recommended)
-
-Double-click `demon_dev.bat` or run in terminal:
+Double-click `demon_dev.bat` or run:
 
 ```cmd
 .\demon_dev.bat
 ```
 
-**What it does automatically:**
-1. Checks if `arduino-cli` is installed — if missing, auto-installs via winget
-2. Checks/installs ESP8266 core (arduino-cli core install)
-3. Checks/installs required libraries (ESPAsyncWebServer, ESPAsyncTCP, ArduinoJson)
-4. Applies IRAM-optimizing core patches
-5. Shows interactive menu with all options
+The script automatically:
+1. Installs arduino-cli (if missing)
+2. Installs ESP8266 core and required libraries
+3. Applies IRAM-optimizing core patches
+4. Presents an interactive menu
 
-**Menu Options:**
 | Option | Action |
 |--------|--------|
 | `[1]` | Compile Firmware |
@@ -166,149 +137,120 @@ Double-click `demon_dev.bat` or run in terminal:
 | `[9]` | Upload LittleFS Data |
 | `[0]` | Exit |
 
+### Method 2: Arduino IDE
+
+1. Add ESP8266 board URL to Preferences
+2. Install ESP8266 core via Boards Manager
+3. Install libraries: ESPAsyncWebServer, ESPAsyncTCP, ArduinoJson
+4. Select board: NodeMCU 1.0, Flash Size: 4MB (FS:3MB OTA:~0.5MB)
+5. Upload the sketch and LittleFS data
+
 ### Method 3: PlatformIO
 
-#### Step 1: Install PlatformIO
-- VS Code Extension: Install **PlatformIO IDE**
-- Or CLI: `pip install platformio`
-
-#### Step 2: Create `platformio.ini`
-```ini
-[env:nodemcuv2]
-platform = espressif8266
-board = nodemcuv2
-framework = arduino
-board_build.flash_mode = dout
-board_build.f_cpu = 160000000L
-board_build.max_size = 4194304
-board_build.board_build.mmu = 4816
-lib_deps =
-    me-no-dev/ESPAsyncWebServer
-    me-no-dev/ESPAsyncTCP
-    bblanchon/ArduinoJson @ ^6.0.0
-```
-
-#### Step 3: Build & Upload
-```bash
-pio run --target upload
-```
+Create `platformio.ini` in the project root and run `pio run --target upload`.
 
 ---
 
-## Flashing Guide (Pre-built Binary)
-
-Download `OPX-MY-DEMON_ESP8266_v1.0.2.bin` from [Releases](https://github.com/OP-AMINUL-FF/OPX_my_demon/releases).
-
-> **Firmware:** Built with `4M3M` flash layout (4MB flash → ~3MB for LittleFS) and `mmu=4816` (16KB ICACHE + 48KB IRAM).
-
-### Using esptool.py (Recommended)
-```bash
-# Flash firmware (replace COM3 with your port)
-esptool.py --port COM3 --baud 115200 write_flash \
-  --flash_mode dout --flash_size 4MB \
-  0x00000 OPX-MY-DEMON_ESP8266_v1.0.2.bin
-```
-
-### Using ESP8266 Flash Download Tool
-1. Open **ESP Flash Download Tool (ESP8266)**
-2. Configure: SPI Speed **40MHz**, SPI Mode **DOUT**, Flash Size **32Mbit (4MB)**
-3. Address `0x00000` → select `OPX-MY-DEMON_ESP8266_v1.0.2.bin`
-4. Press **START** (connect GPIO0 to GND, power cycle if needed)
-
-### Verify Flash (Optional)
-```bash
-esptool.py --port COM3 flash_id
-# Expected: Manufacturer: ef, Device: 4016 (for 4MB Winbond flash)
-
----
-
-## Usage Guide
+## Usage
 
 ### Default Access
+
 | Parameter | Value |
 |-----------|-------|
-| **SSID** | `OPX-MY-DEMON` (configurable) |
-| **Password** | `deauther` (configurable) |
+| **SSID** | `OPX-MY-DEMON` |
+| **Password** | `deauther` |
 | **Web UI** | `http://8.8.8.8` |
 | **Serial** | 115200 baud |
 
 ### Quick Start
-1. Power on the ESP8266 — it creates a WiFi AP
-2. Connect to the AP using the default credentials
-3. Open browser → navigate to `http://8.8.8.8`
-4. Click **SCAN** to discover nearby networks
-5. Select a target → choose attack type
+
+1. Power on the ESP8266
+2. Connect to the `OPX-MY-DEMON` AP
+3. Open `http://8.8.8.8` in your browser
+4. Click SCAN to discover networks
+5. Select a target and choose an attack
 
 ### Web UI Pages
+
 | Page | Function |
 |------|----------|
 | **SCAN** | Network scanner, target selection, attack controls |
-| **ATTACK** | Beacon spam config, phishing page selector |
+| **ATTACK** | Beacon spam, phishing page selector |
 | **MONITOR** | Packet statistics, system logs |
 | **SETTINGS** | Device info, PIN config, WiFi client, themes |
 | **FILE MANAGER** | LittleFS file browser, upload/download |
-| **CUSTOM HTML** | Upload & select custom phishing pages |
+| **CUSTOM HTML** | Upload custom phishing pages |
 | **LANGUAGE** | Language editor (EN/ID) |
 | **EXTENDER** | WiFi extender mode |
-| **HELP** | Credits |
-
-### PIN Protection
-1. Go to Settings → **SET PIN** (4-8 digit)
-2. Sensitive actions (deauth, attacks, reboot) require PIN
-3. 5 failed attempts → 30s lockout
-4. PIN stored encrypted in state.json
-
-### Custom Phishing Pages
-1. Upload `.html` files via **FILE MANAGER** or **CUSTOM HTML**
-2. Go to **CUSTOM HTML** → click on uploaded file
-3. Choose **EVIL-TWIN** or **ROGUE AP** to use it
-4. Selection persists across reboots
+| **HELP** | Credits and information |
 
 ---
 
-## File Structure
+## Web Flasher
+
+Flash your device directly from the browser — no tools required.
+
+> **Website:** [https://opaminulff.netlify.app/](https://opaminulff.netlify.app/)
+
+The web flasher (`FLASHER-WEB/index.html`) uses the Web Serial API to:
+- Download firmware releases from GitHub
+- Flash your ESP8266 with one click
+- Works in Chrome/Edge on desktop and Android
+
+You can also open it locally from `FLASHER-WEB/index.html` (manual upload only).
+
+---
+
+## Project Structure
 
 ```
-OPX-MY-DEMON_ESP8266/            — Firmware project root
-├── OPX-MY-DEMON_ESP8266.ino     — Main firmware (setup, loop, HTTP handlers)
-├── config.h                 — Constants, pin mappings, feature flags
-├── attacks.h                — Core engine: packet injection, scanning, encryption
-├── phishing.h               — 9 built-in HTML phishing templates (PROGMEM)
-├── webui.h                  — Web UI page builders with inline CSS/JS (4 themes)
-├── websockets.h             — WebSocket real-time broadcast
-├── secure_ota.h             — HMAC-SHA256 firmware verification
-├── language.h               — EN/ID translation table (160 entries, PROGMEM)
-├── forensic_yara.yar        — YARA rules for memory forensics
-└── patches/                 — IRAM-optimized ESP8266 core patches
-    ├── core_esp8266_waveform_pwm.cpp
-    ├── gdb_hooks.cpp
-    └── backup/              — Original core files (auto-backed up on first build)
+OPX-MY-DEMON/
+├── FLASHER-WEB/                  # Web-based flasher interface
+│   ├── index.html                # Main web flasher (Tailwind CSS, inline SVGs)
+│   ├── logo.jpg                  # Project logo
+│   ├── netlify.toml              # Netlify deployment config
+│   └── netlify/functions/proxy.js  # GitHub release download proxy
+├── OPX-MY-DEMON_ESP8266/         # Firmware source
+│   ├── OPX-MY-DEMON_ESP8266.ino  # Main firmware entry point
+│   ├── config.h                  # Constants, pin mappings, feature flags
+│   ├── attacks.h                 # Core attack engine
+│   ├── phishing.h                # Phishing HTML templates (PROGMEM)
+│   ├── webui.h                   # Web UI with 4 themes
+│   ├── websockets.h              # WebSocket broadcast
+│   ├── secure_ota.h              # Secure OTA verification
+│   ├── language.h                # EN/ID translation (PROGMEM)
+│   └── patches/                  # IRAM-optimized core patches
+│       ├── core_esp8266_waveform_pwm.cpp
+│       └── gdb_hooks.cpp
+├── demon_dev.bat                 # One-click build/flash script v3.0
+├── build.ps1                     # PowerShell build engine
+├── LICENSE                       # MIT License
+└── README.md                     # This file
 ```
-
-## Persistence (state.json)
-
-All settings auto-save to `/state.json` on LittleFS:
-- Attack states (deauth, beacon, probe, etc.)
-- WiFi client credentials (encrypted)
-- PIN (encrypted with XXTEA)
-- Selected phishing page
-- Language preference
-- Attack timer configuration
-
-On boot, the firmware restores the last known state.
 
 ---
 
 ## Technical Notes
 
-- **Packet Injection**: Uses `wifi_send_pkt_freedom()` from ESP8266 SDK
-- **Promiscuous Mode**: Captures EAPOL handshakes and probe requests
-- **Encryption**: XXTEA with device-unique key (MAC + Chip ID + Flash ID)
-- **IRAM Usage**: 43727/65536 bytes (**66%**) — 25% improvement over default (91%) via `mmu=4816`
-- **DRAM Usage**: 57304/80192 bytes (**71%**) — under the 80KB limit for stable operation
-- **File System**: LittleFS (4MB flash → ~3MB for filesystem via `4M3M` layout)
-- **Web Server**: Async (non-blocking), handles multiple clients
-- **DNS**: Captive portal via custom DNS server (resolves all to 8.8.8.8)
+- Packet injection via `wifi_send_pkt_freedom()` from ESP8266 SDK
+- Promiscuous mode captures EAPOL handshakes and probe requests
+- XXTEA encryption with device-unique key (MAC + Chip ID + Flash ID)
+- IRAM: 43,727 / 65,536 bytes (**66%**) — 25% improvement over default
+- DRAM: 57,304 / 80,192 bytes (**71%**) — stable under 80KB limit
+- Filesystem: LittleFS with 4MB flash (3MB usable via `4M3M`)
+- Async web server for non-blocking multi-client handling
+- Captive portal via custom DNS (all requests resolve to 8.8.8.8)
+
+---
+
+## Changelog
+
+### v1.0.2
+
+- **RAM Optimization:** PROGMEM migration for strings, buffers reduced, customHTML cache removed, EAPOL data clipped
+- **IRAM Optimization:** MMU=4816 (16KB ICACHE + 48KB IRAM), IRAM_ATTR removed from 12 core functions
+- **Bug Fixes:** Atomic file writes, upload handler fix, hide_ap API fix, BSS Transition broadcast fix, EAPOL QoS parsing fix, log buffer reduced
+- **New:** `demon_dev.bat`, IRAM core patches, AGENTS.md, FLASHER-WEB
 
 ---
 
@@ -316,13 +258,13 @@ On boot, the firmware restores the last known state.
 
 - **M1z23R** — ESP8266-EvilTwin v2 (base framework)
 - **Spacehuhn** — Deauther project (packet injection reference)
-- **OP AMINUL FF** — OPX-MY-DEMON modifications & 2026 upgrades
+- **OP AMINUL FF** — OPX-MY-DEMON modifications and 2026 upgrades
 
 ---
 
 ## License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
 
 ---
 
