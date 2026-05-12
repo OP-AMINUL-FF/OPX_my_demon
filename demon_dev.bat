@@ -441,8 +441,8 @@ if not exist "..\.build-memory.log" (
 echo   Patches Applied:
 if exist "%CORE_DIR%\gdb_hooks.cpp" (
     findstr /i "IRAM_ATTR" "%CORE_DIR%\core_esp8266_waveform_pwm.cpp" >nul 2>&1
-    if !errorlevel! equ 0 ( echo     - core_esp8266_waveform_pwm.cpp: Patched
-    ) else ( echo     - core_esp8266_waveform_pwm.cpp: Original )
+    if !errorlevel! equ 0 ( echo     - core_esp8266_waveform_pwm.cpp: Original
+    ) else ( echo     - core_esp8266_waveform_pwm.cpp: Patched )
 ) else ( echo     - Core not yet installed )
 echo.
 echo   Available Binaries:

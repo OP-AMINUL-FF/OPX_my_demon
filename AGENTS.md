@@ -18,4 +18,4 @@ Or double-click `demon_dev.bat` in File Explorer.
 - `patches/gdb_hooks.cpp`: IRAM_ATTR removed from `__gdb_no_op()`
 - `postmortem.cpp` NOT patched (required for abort/panic linker symbols)
 - First run of `demon_dev.bat` backs up originals to `patches/backup/`
-- To restore: copy `patches/backup/*.cpp` back to core directory
+- To restore: Option 10 in `demon_dev.bat` or `build.ps1 -Restore`
