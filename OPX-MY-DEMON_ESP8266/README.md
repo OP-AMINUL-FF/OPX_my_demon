@@ -2,21 +2,13 @@
 
 Complete ESP8266 firmware with Evil Twin, Deauther, Beacon, Probe, Session Hijack attacks + Web UI.
 
-## Build
+## Quick Build
 
-```powershell
-# Quick compile
-.\build.ps1
+Double-click **`demon_dev.bat`** (in project root) — auto-installs everything, shows interactive menu.
 
-# Clean compile (no cache)
-.\build.ps1 -Clean
-```
+## Manual Flash
 
-> `build.ps1` auto-patches ESP8266 core (removes IRAM_ATTR from unused PWM/GDB code) + compiles with `mmu=4816` (48KB IRAM).
-
-## Flash
-
-```powershell
+```cmd
 arduino-cli upload --fqbn "esp8266:esp8266:nodemcuv2" --port COM3 --input-dir ..\firmware
 ```
 

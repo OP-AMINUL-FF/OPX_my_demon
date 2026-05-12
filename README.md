@@ -17,7 +17,7 @@ A full-featured Wi-Fi penetration testing and social engineering firmware for **
 
 ### IRAM Optimization
 - **MMU=4816** — 16KB ICACHE + 48KB IRAM (vs default 32/32), yields **66% IRAM usage** (was **91%**)
-- **Core patches** — 11 `IRAM_ATTR` removed from `waveform_pwm.cpp`, 1 from `gdb_hooks.cpp` (build.ps1 auto-applies)
+- **Core patches** — 11 `IRAM_ATTR` removed from `waveform_pwm.cpp`, 1 from `gdb_hooks.cpp` (`demon_dev.bat` auto-applies)
 
 ### Bug Fixes
 - **Atomic file writes** — `/state.json` writes use `.tmp` + rename pattern to prevent corruption
@@ -38,7 +38,7 @@ A full-featured Wi-Fi penetration testing and social engineering firmware for **
 - `attacks.h`: Dead code removed, BSS Transition broadcast fix, EAPOL parsing fix, DHCP fingerprint buffers shrunk, `phishingSessionId` removed
 - `language.h`: `langTable` moved to PROGMEM, `tr()` reads via `pgm_read_ptr`
 - `secure_ota.h`: Unused functions removed
-- New: `build.ps1`, `patches/` (core IRAM_ATTR patches), `AGENTS.md`
+- New: `demon_dev.bat`, `patches/` (core IRAM_ATTR patches), `AGENTS.md`
 
 ---
 
@@ -137,40 +137,34 @@ Install via Library Manager (Sketch → Include Library → Manage Libraries):
 1. Install **ESP8266 LittleFS Data Upload** plugin (or use `arduino-cli`)
 2. Tools → ESP8266 LittleFS Data Upload → Upload
 
-### Method 2: arduino-cli (Recommended)
+### Method 2: One-Click Build (Recommended)
 
-#### Step 1: Install arduino-cli
-```powershell
-# Windows (winget)
-winget install Arduino.ArduinoCLI
+Double-click `demon_dev.bat` or run in terminal:
 
-# Or manual: https://arduino.github.io/arduino-cli/installation/
+```cmd
+.\demon_dev.bat
 ```
 
-#### Step 2: One-time Setup
-```powershell
-arduino-cli core update-index
-arduino-cli core install esp8266:esp8266
-```
+**What it does automatically:**
+1. Checks if `arduino-cli` is installed — if missing, auto-installs via winget
+2. Checks/installs ESP8266 core (arduino-cli core install)
+3. Checks/installs required libraries (ESPAsyncWebServer, ESPAsyncTCP, ArduinoJson)
+4. Applies IRAM-optimizing core patches
+5. Shows interactive menu with all options
 
-#### Step 3: Install Required Libraries
-```powershell
-arduino-cli lib install "ESP Async WebServer" "ESPAsyncTCP" "ArduinoJson"
-```
-
-#### Step 4: Build & Flash
-```powershell
-# Quick compile (auto-patches core + compiles)
-.\OPX-MY-DEMON_ESP8266\build.ps1
-
-# Clean compile (no cache)
-.\OPX-MY-DEMON_ESP8266\build.ps1 -Clean
-
-# Flash (change COM3 to your port)
-arduino-cli upload --fqbn "esp8266:esp8266:nodemcuv2" --port COM3 --input-dir .\firmware
-```
-
-> **Note:** `build.ps1` automatically applies IRAM-optimizing patches to the ESP8266 core before compiling.
+**Menu Options:**
+| Option | Action |
+|--------|--------|
+| `[1]` | Compile Firmware |
+| `[2]` | Compile + Flash (auto-detect port) |
+| `[3]` | Compile + Flash + Serial Monitor |
+| `[4]` | Flash Existing Binary Only |
+| `[5]` | Open Serial Monitor |
+| `[6]` | List Available COM Ports |
+| `[7]` | Restore Original Core Files |
+| `[8]` | Full Clean Build |
+| `[9]` | Upload LittleFS Data |
+| `[0]` | Exit |
 
 ### Method 3: PlatformIO
 
@@ -285,7 +279,6 @@ OPX-MY-DEMON_ESP8266/            — Firmware project root
 ├── secure_ota.h             — HMAC-SHA256 firmware verification
 ├── language.h               — EN/ID translation table (160 entries, PROGMEM)
 ├── forensic_yara.yar        — YARA rules for memory forensics
-├── build.ps1                — PowerShell build script (patches + compile)
 └── patches/                 — IRAM-optimized ESP8266 core patches
     ├── core_esp8266_waveform_pwm.cpp
     ├── gdb_hooks.cpp
